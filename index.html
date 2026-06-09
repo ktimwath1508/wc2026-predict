@@ -26,18 +26,27 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 /* HERO */
 .hero{background:repeating-linear-gradient(90deg,transparent 0 38px,rgba(255,255,255,.03) 38px 76px),
   radial-gradient(130% 90% at 80% -10%,var(--pitch2),var(--pitch));
-  color:#fff;padding:20px 18px 24px;position:relative;overflow:hidden}
-.hero::after{content:"";position:absolute;right:-44px;top:-44px;width:170px;height:170px;border:2px solid var(--line);border-radius:50%}
-.hero::before{content:"";position:absolute;right:20px;bottom:-30px;width:100px;height:100px;border:1px solid var(--line);border-radius:50%}
-.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.22);border:1px solid var(--line);padding:4px 11px;border-radius:999px;font-size:11.5px;font-weight:600;letter-spacing:.3px}
+  color:#fff;padding:10px 14px 12px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-44px;top:-44px;width:140px;height:140px;border:2px solid var(--line);border-radius:50%}
+.hero::before{display:none}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.22);border:1px solid var(--line);padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:600;letter-spacing:.3px}
 .hero-badge b{color:var(--gold-soft)}
-.hero h1{font-family:var(--display);font-weight:800;font-size:28px;line-height:1.05;margin:12px 0 3px}
+.hero h1{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.1;margin:6px 0 2px}
 .hero h1 span{color:var(--gold)}
-.hero p{margin:0;opacity:.78;font-size:13px}
-.whoami{margin-top:14px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border:1px solid var(--line);padding:9px 12px;border-radius:13px}
-.whoami .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:var(--ink);font-family:var(--display);font-weight:800;font-size:14px;flex-shrink:0}
-.whoami .nm{font-weight:700;font-size:14px}
-.whoami button{margin-left:auto;background:none;border:1px solid var(--line);color:#fff;border-radius:9px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit}
+.hero p{margin:0;opacity:.78;font-size:12px}
+.whoami{margin-top:8px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid var(--line);padding:7px 10px;border-radius:11px}
+.whoami .av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:var(--ink);font-family:var(--display);font-weight:800;font-size:12px;flex-shrink:0}
+.whoami .nm{font-weight:700;font-size:13px}
+.whoami .user-rank{font-size:11px;color:var(--gold-soft);margin-left:4px;font-weight:500}
+/* COUNTDOWN BAR */
+.countdown-bar{display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:7px 14px;font-size:12.5px;font-weight:700;font-family:var(--display);
+  background:var(--pitch2);color:#fff;border-bottom:2px solid rgba(255,255,255,.1);
+  position:sticky;top:0;z-index:90;transition:background .3s}
+.countdown-bar.warn{background:#d97706}
+.countdown-bar.danger{background:#dc2626}
+.countdown-bar.hidden{display:none}
+.countdown-bar .cd-time{font-size:14px;color:var(--gold-soft)}
 
 /* NAV */
 .nav{display:flex;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:#fff;border-top:1px solid #e4ebe2;z-index:100;padding:0 4px 2px}
@@ -105,7 +114,7 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .deadline-info{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.8;background:#f4f7f2;border-radius:8px;padding:8px 10px}
 
 /* GD HEADER / FOOTNOTE */
-.sec-divider{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:12px 16px 4px}
+.sec-divider{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:10px 16px 2px}
 .gd-deadline-note{font-size:11px;color:var(--muted);text-align:center;padding:2px 14px 8px;line-height:1.5}
 .gd-deadline-note b{color:var(--pitch);font-weight:700}
 .gd-watching-note{font-size:12px;color:var(--warn);text-align:center;padding:4px 14px 8px;font-weight:600}
@@ -257,6 +266,12 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 
 <!-- MAIN -->
 <div id="screen-main" class="screen">
+  <!-- COUNTDOWN BAR -->
+  <div class="countdown-bar hidden" id="countdown-bar">
+    <span id="cd-icon">⏰</span>
+    <span id="cd-text">ปิดรับ GD</span>
+    <span class="cd-time" id="cd-time">–</span>
+  </div>
   <div class="hero">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1">
       <span class="hero-badge">⚽ บอลโลก <b>2026</b> • วงเพื่อน LINE</span>
@@ -266,7 +281,10 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
     <p>ทายสกอร์ทุกนัด ลุ้นแชมป์ ลุ้นดาวซัลโว</p>
     <div class="whoami">
       <div class="av" id="whoami-av">?</div>
-      <div class="nm" id="whoami-name"></div>
+      <div style="display:flex;align-items:baseline;gap:4px">
+        <div class="nm" id="whoami-name"></div>
+        <span class="user-rank" id="whoami-rank"></span>
+      </div>
       
     </div>
   </div>
@@ -965,7 +983,7 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
     document.getElementById('tab-'+tab).classList.add('active');
     if(tab==='predict')renderPredict();
     if(tab==='view')renderViewChips();
-    if(tab==='standings')renderStandings();
+    if(tab==='standings'){renderStandings();updateHeroRank();}
     if(tab==='analytics')renderAnalytics();
     if(tab==='admin')renderAdmin();
   });
@@ -1056,9 +1074,59 @@ async function loginSuccess(name,pl){
   const fresh=allPlayers.find(p=>p.name===user)||{};
   origChamp=fresh.champ||'';origScorer=fresh.scorer||'';champSelected=fresh.champ||'';
   renderPredict();
+  startCountdown();
+  updateHeroRank();
+}
+
+
+// ── COUNTDOWN BAR ─────────────────────────────────────────────
+let cdInterval=null;
+function startCountdown(){
+  if(cdInterval)clearInterval(cdInterval);
+  updateCountdown();
+  cdInterval=setInterval(updateCountdown,60*1000);
+}
+function updateCountdown(){
+  const bar=document.getElementById('countdown-bar');
+  const cdText=document.getElementById('cd-text');
+  const cdTime=document.getElementById('cd-time');
+  if(!bar||!allMatches.length)return;
+  const gd=getCurrentGD();
+  const locked=isGDLocked(gd);
+  if(locked){bar.classList.add('hidden');return;}
+  const fk=gdFirstKick(gd);
+  if(!fk){bar.classList.add('hidden');return;}
+  const now=new Date();
+  const diff=fk-now;
+  if(diff<=0){bar.classList.add('hidden');renderPredict();return;}
+  const hrs=Math.floor(diff/3600000);
+  const mins=Math.floor((diff%3600000)/60000);
+  let timeStr='';
+  if(hrs>0)timeStr=`${hrs} ชม. ${mins} นาที`;
+  else timeStr=`${mins} นาที`;
+  cdText.textContent=`ปิดรับ GD${gd} ใน`;
+  cdTime.textContent=timeStr;
+  bar.classList.remove('hidden','warn','danger');
+  if(hrs<1)bar.classList.add('danger');
+  else if(hrs<6)bar.classList.add('warn');
+}
+
+// ── UPDATE HERO RANK ──────────────────────────────────────────
+function updateHeroRank(){
+  const rankEl=document.getElementById('whoami-rank');
+  if(!rankEl||!user)return;
+  const ranked=calcStandings();
+  const idx=ranked.findIndex(([n])=>n===user);
+  if(idx<0)return;
+  const rank=idx+1;
+  const pts=ranked[idx][1].pts;
+  const medals=['🥇','🥈','🥉'];
+  rankEl.textContent=`${medals[idx]||'#'+rank} อันดับ ${rank} · ${pts} แต้ม`;
 }
 
 initLogin();
+// Auto-refresh ทุก 15 นาที เพื่อ sync GD ใหม่
+setTimeout(()=>location.reload(), 15*60*1000);
 </script>
 </body>
 </html>
