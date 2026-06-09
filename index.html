@@ -486,7 +486,15 @@ function calcPts(pred,match){
   return pr===sr?1:0;
 }
 function getPred(mid){return allPreds.find(p=>p.match_id===mid&&p.player_name===user);}
-function getStageMult(stage){if(stage==='SF'||stage==='3rd')return 2;if(stage==='Final')return 3;return 1;}
+function getMatch(mid){return allMatches.find(m=>m.match_id===mid);}
+function isMatchLocked(mid){const m=getMatch(mid);return m?isGDLocked(m.gd):true;}
+function normalizeStage(stage){return String(stage||'').trim().toLowerCase().replace(/[\s_-]+/g,'');}
+function getStageMult(stage){
+  const s=normalizeStage(stage);
+  if(['sf','semifinal','semifinals','semi','semis','3rd','thirdplace','thirdplacematch'].includes(s))return 2;
+  if(['final','finals','championship'].includes(s))return 3;
+  return 1;
+}
 
 // ── BONUS STATUS ───────────────────────────────────────────────
 function getBonusStatus(){
@@ -495,8 +503,9 @@ function getBonusStatus(){
   if(gd1Kick&&now<gd1Kick)return 'r1';
   const r32Ms=allMatches.filter(m=>m.stage==='R32');
   if(now>=GROUP_STAGE_END&&r32Ms.length){
-    const lastR32GD=[...new Set(r32Ms.map(m=>m.gd))].sort((a,b)=>+a-+b).pop();
-    const r2End=gdFirstKick(lastR32GD);
+    // เปิดแก้ Bonus แบบมี penalty หลังจบรอบ Group จนถึง kickoff คู่แรกของรอบ 32 ทีม
+    const firstR32GD=[...new Set(r32Ms.map(m=>m.gd))].sort((a,b)=>+a-+b).shift();
+    const r2End=gdFirstKick(firstR32GD);
     if(r2End&&now<r2End)return 'r2';
   }
   if(now>=GROUP_STAGE_END&&!r32Ms.length)return 'r2';
@@ -504,7 +513,7 @@ function getBonusStatus(){
 }
 
 // ── PREDICT TAB ────────────────────────────────────────────────
-function validateScore(inp){inp.value=inp.value.replace(/[^0-9]/g,'');if(inp.value!==''&&+inp.value>99)inp.value='99';updateDirtyHint();}
+function validateScore(inp){inp.value=inp.value.replace(/[^0-9]/g,'');if(inp.value.length>1)inp.value=String(parseInt(inp.value,10)||0);if(inp.value!==''&&+inp.value>99)inp.value='99';updateDirtyHint();}
 function updateDirtyHint(){const hint=document.getElementById('dirty-hint');const btn=document.getElementById('btn-submit-gd');const dirty=document.querySelectorAll('.score-input.dirty').length>0;if(hint)hint.style.display=dirty?'block':'none';if(btn&&!btn.disabled)btn.classList.toggle('dirty-state',dirty);}
 function markDirty(mid){document.getElementById('s1-'+mid)?.classList.add('dirty');document.getElementById('s2-'+mid)?.classList.add('dirty');updateDirtyHint();}
 
@@ -550,7 +559,7 @@ function renderPredict(){
     <div class="deadline-info">
       🔓 ก่อน GD1 kickoff (${fmtDeadline('1')||'–'}): ฟรี<br>
       ⚠️ หลัง Group Stage จบ: เปิดอีกครั้ง แต่หัก <b>−5 แต้ม</b>/รายการ<br>
-      🔒 ปิดถาวรก่อน R32 สุดท้าย kickoff
+      🔒 ปิดถาวรก่อน R32 คู่แรก kickoff
     </div>
   </div>`;
 
@@ -581,37 +590,48 @@ function renderPredict(){
   matches.forEach(m=>{
     const pred=getPred(m.match_id);
     const v1=pred?.s1??'',v2=pred?.s2??'';
+    const hasPred=!!(pred&&pred.s1!==''&&pred.s2!=='');
     const hasRes=m.score1!==''&&m.score2!=='';
     const sc=calcPts(pred,m);
     const mult=getStageMult(m.stage);
+    const inputDisabled=locked||hasPred;
     let badge;
-    if(hasRes&&pred&&pred.s1!==''){
+    if(hasRes&&hasPred){
       const bc=sc===3?'b-exact':sc===1?'b-correct':'b-wrong';
       const bt=sc===3?`🎯 สกอร์เป๊ะ${mult>1?' ×'+mult:''}`:sc===1?'✓ ผลถูก':'✗ ผิด';
       badge=`<span class="badge ${bc}">${bt}</span>`;
-    }else if(locked&&pred&&pred.s1!==''){
-      badge=`<span class="badge b-locked">⏳ ${pred.s1}–${pred.s2}</span>`;
+    }else if(locked&&hasPred){
+      badge=`<span class="badge b-locked">🔒 ${pred.s1}–${pred.s2}</span>`;
     }else if(locked){
       badge=`<span class="badge b-nopred">– ไม่ได้ทาย</span>`;
+    }else if(hasPred){
+      badge=`<span class="badge b-locked">✓ บันทึกแล้ว</span>`;
     }else{
       badge=`<span class="badge b-open">${m.stage==='Group'?'กลุ่ม '+(m.group||''):m.stage}${mult>1?' ×'+mult:''}</span>`;
     }
     const f1=getFlag(m.team1),f2=getFlag(m.team2);
-    html+=`<div class="match-card ${locked?'locked':''}">
+    const editHtml=(!locked&&hasPred&&!hasRes)?`<button class="edit-btn" type="button" onclick="enterEditMode('${m.match_id}')">✎ แก้คำทาย</button>`:'';
+    const statusText=locked?'ปิดรับแล้ว':hasPred?'บันทึกแล้ว • กดแก้ได้จนถึง deadline':'';
+    html+=`<div class="match-card ${locked?'locked':''} ${hasPred?'saved':''}" id="card-${m.match_id}">
       <div class="match-meta"><span class="match-time">${m.date_th} · ${m.time_th} น.</span>${badge}</div>
       <div class="teams-row">
         <div class="team-name">${f1?`<span class="team-flag">${f1}</span>`:''}<span>${m.team1}</span></div>
         <div class="score-inputs">
-          <input class="score-input" type="number" min="0" max="99" id="s1-${m.match_id}" value="${v1}" ${locked?'disabled':''} oninput="validateScore(this);markDirty('${m.match_id}');scheduleAutoSave('${m.match_id}')" inputmode="numeric">
+          <button class="score-btn" type="button" ${inputDisabled?'disabled':''} onclick="adjustScore('s1-${m.match_id}',-1)">−</button>
+          <input class="score-input" type="number" min="0" max="99" id="s1-${m.match_id}" value="${v1}" ${inputDisabled?'disabled':''} oninput="validateScore(this);markDirty('${m.match_id}');scheduleAutoSave('${m.match_id}')" inputmode="numeric">
           <span class="score-sep">–</span>
-          <input class="score-input" type="number" min="0" max="99" id="s2-${m.match_id}" value="${v2}" ${locked?'disabled':''} oninput="validateScore(this);markDirty('${m.match_id}');scheduleAutoSave('${m.match_id}')" inputmode="numeric">
+          <input class="score-input" type="number" min="0" max="99" id="s2-${m.match_id}" value="${v2}" ${inputDisabled?'disabled':''} oninput="validateScore(this);markDirty('${m.match_id}');scheduleAutoSave('${m.match_id}')" inputmode="numeric">
+          <button class="score-btn" type="button" ${inputDisabled?'disabled':''} onclick="adjustScore('s2-${m.match_id}',1)">+</button>
         </div>
         <div class="team-name team-away"><span>${m.team2}</span>${f2?`<span class="team-flag">${f2}</span>`:''}</div>
       </div>
       ${hasRes?`<div class="real-score">ผลจริง: ${m.score1}–${m.score2}</div>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px">
+        <div>${editHtml}</div>
+        <div class="save-status ${hasPred?'saved':''}" id="status-${m.match_id}">${statusText}</div>
+      </div>
     </div>`;
   });
-
   if(!locked){
     // แสดงปุ่ม submit เฉพาะถ้ายังมีคู่ที่ยังไม่ได้ทายเลย
     const unsubmitted=matches.filter(m=>{const p=getPred(m.match_id);return !p||p.s1==='';});
@@ -679,6 +699,11 @@ async function saveBonus(){
 }
 
 async function submitAllPreds(gd){
+  if(isGDLocked(gd)){
+    toast('ปิดรับคำทายของ Game Date นี้แล้ว');
+    renderPredict();
+    return;
+  }
   const matches=gdMatches(gd);
   const btn=document.getElementById('btn-submit-gd');
   const toSave=[];
@@ -741,26 +766,29 @@ function renderViewGrid(gd){
 // ── STANDINGS ──────────────────────────────────────────────────
 function calcStandings(upToGD=null){
   const sc={};
-  allPlayers.forEach(p=>{sc[p.name]={pts:0,exact:0,correct:0,wrong:0,exactPts:0,correctPts:0,perfectBonus:0,bonus:0,champ:p.champ,scorer:p.scorer,penalty:p.bonus_penalty||0,penaltyCount:Math.round((p.bonus_penalty||0)/5)};});
+  allPlayers.forEach(p=>{sc[p.name]={pts:0,exact:0,correct:0,wrong:0,exactPts:0,correctPts:0,perfectBonus:0,stageBonus:0,bonus:0,champ:p.champ,scorer:p.scorer,penalty:p.bonus_penalty||0,penaltyCount:Math.round((p.bonus_penalty||0)/5)};});
   const gdMap={};allMatches.forEach(m=>{if(upToGD&&+m.gd>+upToGD)return;if(!gdMap[m.gd])gdMap[m.gd]=[];gdMap[m.gd].push(m);});
   Object.entries(gdMap).forEach(([gd,ms])=>{
     const done=ms.filter(m=>m.score1!==''&&m.score2!=='');if(!done.length)return;
-    const mult=getStageMult(done[0].stage);
     allPlayers.forEach(pl=>{
-      let pts=0,predictedAll=true,allExact=true,exCnt=0;
+      let gdPts=0,predictedAll=true,allExact=true,exCnt=0;
       done.forEach(m=>{
         const pred=allPreds.find(p=>p.match_id===m.match_id&&p.player_name===pl.name);
-        const p=calcPts(pred,m);
-        if(p===null){predictedAll=false;allExact=false;return;} // ไม่ได้ทาย
-        pts+=p;
-        if(p===3){sc[pl.name].exact++;sc[pl.name].exactPts+=3;exCnt++;}
-        else if(p===1){sc[pl.name].correct++;sc[pl.name].correctPts+=1;allExact=false;}
+        const base=calcPts(pred,m);
+        if(base===null){predictedAll=false;allExact=false;return;} // ไม่ได้ทาย
+        const mult=getStageMult(m.stage);
+        const matchPts=base*mult;
+        gdPts+=matchPts;
+        if(mult>1&&base>0)sc[pl.name].stageBonus+=base*(mult-1);
+        if(base===3){sc[pl.name].exact++;sc[pl.name].exactPts+=matchPts;exCnt++;}
+        else if(base===1){sc[pl.name].correct++;sc[pl.name].correctPts+=matchPts;allExact=false;}
         else{sc[pl.name].wrong++;allExact=false;}
       });
       // Perfect GD: ต้องทายครบทุกนัด + เป๊ะทุกนัด + มีอย่างน้อย 3 นัด
+      // คะแนน Perfect จะคูณ 2 หลังจาก apply stage multiplier แล้ว เช่น SF ×2 + Perfect ×2 จะเท่ากับ base ×4
       const isPerfect=done.length>=3&&predictedAll&&allExact&&exCnt===done.length;
-      if(isPerfect){sc[pl.name].perfectBonus+=pts*mult;pts*=2;}
-      sc[pl.name].pts+=pts*mult;
+      if(isPerfect){sc[pl.name].perfectBonus+=gdPts;gdPts*=2;}
+      sc[pl.name].pts+=gdPts;
     });
   });
   const cr=settings['champion_result']||'',sr=settings['scorer_result']||'';
@@ -794,6 +822,7 @@ function renderStandings(){
     if(s.exact>0)breakdown.push(`🎯 เป๊ะ ${s.exact} นัด (+${exactPts})`);
     if(s.correct>0)breakdown.push(`✓ ผลถูก ${s.correct} นัด (+${correctPts})`);
     if(s.wrong>0)breakdown.push(`✗ ผิด ${s.wrong} นัด`);
+    if(s.stageBonus>0)breakdown.push(`🏁 รอบพิเศษ (+${s.stageBonus})`);
     if(s.perfectBonus>0)breakdown.push(`⚡ Perfect GD ×2 (+${s.perfectBonus})`);
     if(s.bonus>0)breakdown.push(`🎁 Bonus +${s.bonus}`);
     if(s.penalty>0)breakdown.push(`<span style="color:var(--bad)">✂️ แก้ Bonus ${s.penaltyCount} ครั้ง (−${s.penalty})</span>`);
@@ -1088,10 +1117,12 @@ function toggleAcc(gd){
 // ── EDIT MODE & AUTO SAVE ──────────────────────────────────────
 let autoSaveTimers={};
 function enterEditMode(mid){
+  if(isMatchLocked(mid)){toast('ปิดรับคำทายของคู่นี้แล้ว');renderPredict();return;}
   // enable inputs
   const s1=document.getElementById('s1-'+mid);
   const s2=document.getElementById('s2-'+mid);
   const card=document.getElementById('card-'+mid);
+  card?.querySelectorAll('.score-btn').forEach(b=>b.disabled=false);
   if(s1){s1.disabled=false;s1.focus();}
   if(s2)s2.disabled=false;
   if(card)card.classList.remove('saved');
@@ -1102,6 +1133,7 @@ function enterEditMode(mid){
   if(st){st.textContent='กำลังแก้ไข...';st.className='save-status saving';}
 }
 function confirmEdit(mid){
+  if(isMatchLocked(mid)){toast('ปิดรับคำทายของคู่นี้แล้ว');renderPredict();return;}
   const s1=document.getElementById('s1-'+mid)?.value??'';
   const s2=document.getElementById('s2-'+mid)?.value??'';
   if(s1===''||s2===''){toast('กรุณากรอกสกอร์ให้ครบ');return;}
@@ -1110,14 +1142,16 @@ function confirmEdit(mid){
 
 function adjustScore(id,delta){
   const inp=document.getElementById(id);if(!inp||inp.disabled)return;
+  const mid=id.replace('s1-','').replace('s2-','');
+  if(isMatchLocked(mid)){toast('ปิดรับคำทายของคู่นี้แล้ว');renderPredict();return;}
   let v=parseInt(inp.value)||0;
   v=Math.max(0,Math.min(99,v+delta));
   inp.value=v;
   // trigger oninput manually
-  const mid=id.replace('s1-','').replace('s2-','');
   markDirty(mid);scheduleAutoSave(mid);
 }
 function scheduleAutoSave(mid){
+  if(isMatchLocked(mid)){toast('ปิดรับคำทายของคู่นี้แล้ว');renderPredict();return;}
   if(autoSaveTimers[mid])clearTimeout(autoSaveTimers[mid]);
   const st=document.getElementById('status-'+mid);
   if(st){st.textContent='กำลังบันทึก...';st.className='save-status saving';}
@@ -1129,6 +1163,16 @@ function scheduleAutoSave(mid){
 }
 async function autoSavePred(mid,s1,s2){
   const st=document.getElementById('status-'+mid);
+  if(isMatchLocked(mid)){
+    if(st){st.textContent='🔒 ปิดรับแล้ว';st.className='save-status error';}
+    toast('ปิดรับคำทายของคู่นี้แล้ว');
+    renderPredict();
+    return;
+  }
+  if(s1===''||s2===''||+s1<0||+s2<0||+s1>99||+s2>99){
+    if(st){st.textContent='⚠️ สกอร์ไม่ถูกต้อง';st.className='save-status error';}
+    return;
+  }
   try{
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({type:'prediction',match_id:mid,player_name:user,pred_score1:+s1,pred_score2:+s2})});
