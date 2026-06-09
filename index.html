@@ -150,6 +150,15 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .lb-pts span{font-size:12px;color:var(--muted);font-weight:500}
 .bonus-board-wrap{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm);margin:8px 12px 0;border:1px solid #eaefe8}
 
+
+.lb-bonus-picks{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.lb-pick{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:4px 8px;border-radius:999px;background:#f8faf7;border:1px solid #e6eee4;color:#334155;font-size:11px;font-weight:700;line-height:1.2}
+.lb-pick.empty{color:#94a3b8;font-weight:600;background:#fafafa;border-color:#eef1ed}
+.lb-pick img{width:18px!important;height:14px!important;border-radius:2px!important;object-fit:cover;vertical-align:middle}
+.lb-detail{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.7}
+.lb-row.me .lb-pick{background:#fff7df;border-color:#ffe7a3}
+.lb-row.me .lb-pick.empty{background:#fffdf5;border-color:#f5edd3}
+
 /* ANALYTICS */
 .analytics-wrap{padding:0 12px 12px}
 .chart-card{background:var(--card);border-radius:var(--r);padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm);border:1px solid #eaefe8}
@@ -430,10 +439,8 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
     <div id="view-list"></div>
   </div>
   <div id="tab-standings" class="tab-content">
-    <div class="sec-head"><h2>ตารางคะแนน</h2><p>คะแนนสะสม + Bonus</p></div>
+    <div class="sec-head"><h2>ตารางคะแนน</h2><p>คะแนนสะสม + Bonus Picks</p></div>
     <div class="lb" id="standings-list"><div class="loading">กำลังโหลด...</div></div>
-    <div class="sec-divider" style="margin-top:10px">Bonus Picks ของทุกคน</div>
-    <div class="bonus-board-wrap" id="bonus-board"></div>
   </div>
   <div id="tab-analytics" class="tab-content">
     <div class="sec-head"><h2>Stats & Insights</h2></div>
@@ -958,8 +965,22 @@ function getRankChange(){
 }
 function renderStandings(){
   const ranked=calcStandings();const medals=['🥇','🥈','🥉'];
+  const playerByName={};allPlayers.forEach(pl=>playerByName[pl.name]=pl);
+
+  function bonusPickHtml(pl){
+    if(!pl)return`<div class="lb-bonus-picks"><span class="lb-pick empty">⏳ ยังไม่ได้ส่งโบนัส</span></div>`;
+    const hasChamp=!!pl.champ,hasScorer=!!pl.scorer;
+    if(!hasChamp&&!hasScorer){
+      return`<div class="lb-bonus-picks"><span class="lb-pick empty">⏳ ยังไม่ได้ส่งโบนัส</span></div>`;
+    }
+    const chips=[];
+    if(hasChamp)chips.push(`<span class="lb-pick">🏆 ${getFlag(pl.champ)||''}<span>${pl.champ}</span></span>`);
+    if(hasScorer)chips.push(`<span class="lb-pick">⚽ <span>${pl.scorer}</span></span>`);
+    return`<div class="lb-bonus-picks">${chips.join('')}</div>`;
+  }
+
   document.getElementById('standings-list').innerHTML=ranked.map(([name,s],i)=>{
-    const isMe=name===user;const rk=i+1;
+    const pl=playerByName[name];const isMe=name===user;const rk=i+1;
     const exactPts=s.exactPts;const correctPts=s.correctPts;
     const breakdown=[];
     if(s.exact>0)breakdown.push(`🎯 เป๊ะ ${s.exact} นัด (+${exactPts})`);
@@ -973,15 +994,12 @@ function renderStandings(){
       <div class="rank-n${rk<=3?' r'+rk:''}">${medals[i]||rk}</div>
       <div class="lb-info">
         <div class="lb-name">${isMe?'👤 ':''}<span style="${isMe?'color:var(--pitch)':''}">${name}</span></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.8">${breakdown.length?breakdown.join(' · '):'ยังไม่มีคะแนน'}</div>
+        ${bonusPickHtml(pl)}
+        <div class="lb-detail">${breakdown.length?breakdown.join(' · '):'ยังไม่มีคะแนน'}</div>
       </div>
       <div class="lb-pts">${s.pts}<span> แต้ม</span></div>
     </div>`;
   }).join('')||'<div class="empty">ยังไม่มีผลแมตช์</div>';
-  document.getElementById('bonus-board').innerHTML=allPlayers.map(pl=>`<div class="lb-row">
-    <div class="lb-info"><div class="lb-name">${pl.name}</div>
-      <div class="lb-sub">🏆 ${getFlag(pl.champ)||''}${pl.champ?' '+pl.champ:'–'} &nbsp;|&nbsp; ⚽ ${pl.scorer||'–'}</div>
-    </div></div>`).join('')||'<div class="empty">ยังไม่มีข้อมูล</div>';
 }
 
 // ── ANALYTICS ──────────────────────────────────────────────────
