@@ -152,8 +152,8 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 
 
 .lb-bonus-picks{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
-.lb-pick{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:4px 8px;border-radius:999px;background:#f8faf7;border:1px solid #e6eee4;color:#334155;font-size:11px;font-weight:700;line-height:1.2}
-.lb-pick.empty{color:#94a3b8;font-weight:600;background:#fafafa;border-color:#eef1ed}
+.lb-pick{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:4px 8px;border-radius:999px;background:#f8faf7;border:1px solid #e6eee4;color:#334155;font-size:11px;font-weight:700;line-height:1.2;white-space:nowrap}
+.lb-pick.empty{color:#94a3b8;font-weight:600;background:#fafafa;border-color:#eef1ed;font-size:10.5px;padding:3px 7px;max-width:max-content}
 .lb-pick img{width:18px!important;height:14px!important;border-radius:2px!important;object-fit:cover;vertical-align:middle}
 .lb-detail{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.7}
 .lb-row.me .lb-pick{background:#fff7df;border-color:#ffe7a3}
@@ -379,38 +379,68 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
         <div class="rules-note" style="margin-top:8px">Top Goal Scorer จะเพิ่มลิงก์ภายหลังเมื่อ FIFA เปิดหน้าข้อมูลอย่างเป็นทางการ</div>
       </div>
       <div class="rules-section">
-        <h4>Scoring Rules</h4>
+        <h4>⏰ Prediction Deadline</h4>
         <ul class="rules-list">
-          <li>ทายผลถูก เช่น ชนะ / เสมอ / แพ้ = 1 คะแนน</li>
-          <li>ทายสกอร์ตรง = 3 คะแนน</li>
-          <li>Perfect Gameday: ถ้า GD นั้นมีอย่างน้อย 3 คู่ และทายสกอร์ตรงทุกคู่ ได้คะแนนรวมของ GD นั้น ×2</li>
-          <li>Semi Final และ Third-place match = คะแนนคู่นั้น ×2</li>
-          <li>Final = คะแนนคู่นั้น ×3</li>
+          <li>สามารถแก้ไขคำทายผลการแข่งขันได้ไม่จำกัดจำนวนครั้งก่อนปิดรับ</li>
+          <li>การแก้คำทายผลการแข่งขันรายคู่ <b>ไม่ถูกหักคะแนน</b></li>
+          <li>แต่ละ Gameday จะปิดรับคำทายเมื่อถึงเวลา Kickoff ของคู่แรกใน Gameday นั้น</li>
+          <li>เมื่อปิดรับแล้ว คำทายทุกคู่ใน Gameday นั้นจะถูกล็อกพร้อมกันทั้งหมด</li>
+        </ul>
+        <div class="rules-note" style="margin-top:8px">
+          <b>ตัวอย่าง</b><br>
+          Game Date 1 มี 3 คู่<br>
+          • 02:00 Mexico vs South Africa<br>
+          • 09:00 South Korea vs Czech Republic<br>
+          • 12:00 Japan vs Nigeria<br><br>
+          เมื่อคู่แรกเริ่มแข่งขันเวลา <b>02:00 น.</b><br>
+          คำทายของทั้ง 3 คู่ใน <b>Game Date 1</b> จะถูกล็อกพร้อมกันทั้งหมด และไม่สามารถแก้ไขได้อีก
+        </div>
+        <ul class="rules-list" style="margin-top:8px">
+          <li>Gameday ถัดไปจะเปิดให้ทายเวลา <b>14:00 น.</b></li>
+          <li>ระบบจะไม่แสดงฟอร์มทายผลของ Gameday ใหม่ก่อนเวลาที่กำหนด</li>
+          <li>ระบบจะนับเฉพาะคำทายที่กด <b>บันทึก / ยืนยัน</b> สำเร็จแล้วเท่านั้น</li>
         </ul>
       </div>
       <div class="rules-section">
-        <h4>Prediction Deadline</h4>
+        <h4>⭐ Bonus Prediction</h4>
         <ul class="rules-list">
-          <li>แต่ละ Gameday ปิดรับก่อนคู่แรกของ Gameday นั้นเริ่มแข่งขัน</li>
-          <li>หลังปิดรับแล้วจะแก้คำทายของ Gameday นั้นไม่ได้</li>
-          <li>Gameday ใหม่จะแสดงให้ทายหลัง 14:00 น. ของวันนั้น</li>
+          <li>โบนัสประกอบด้วย 🏆 ทายทีมแชมป์โลก และ ⚽ ทายดาวซัลโวสูงสุด</li>
+          <li>ทายทีมแชมป์โลกถูกต้อง = <b>+10 คะแนน</b></li>
+          <li>ทายดาวซัลโวสูงสุดถูกต้อง = <b>+10 คะแนน</b></li>
+          <li>คะแนนโบนัสจะถูกนำมาคำนวณหลังการแข่งขันรอบ <b>Final</b> สิ้นสุดลง</li>
+        </ul>
+        <div class="rules-note" style="margin-top:8px">
+          <b>การแก้ไขโบนัส</b><br>
+          • ก่อน Kickoff นัดเปิดสนาม (GD1): แก้ได้ฟรี ไม่ถูกหักคะแนน<br>
+          • หลังจบ Group Stage ถึงก่อน Kickoff รอบ 32 ทีม: แก้ได้ แต่หัก <b>5 คะแนนต่อหัวข้อที่เปลี่ยน</b><br>
+          • หลัง Kickoff รอบ 32 ทีม: โบนัสทั้งหมดจะถูกล็อกถาวร
+        </div>
+        <ul class="rules-list" style="margin-top:8px">
+          <li>เปลี่ยนเฉพาะทีมแชมป์ = -5 คะแนน</li>
+          <li>เปลี่ยนเฉพาะดาวซัลโว = -5 คะแนน</li>
+          <li>เปลี่ยนทั้งทีมแชมป์และดาวซัลโว = -10 คะแนน</li>
+          <li>หากไม่แก้ไขโบนัส หรือเลือกทีม/นักเตะเดิม จะไม่ถูกหักคะแนน</li>
         </ul>
       </div>
       <div class="rules-section">
-        <h4>Bonus Prediction</h4>
+        <h4>🏅 Scoring Rules</h4>
         <ul class="rules-list">
-          <li>แก้ฟรีได้ก่อน kickoff GD1</li>
-          <li>หลังจบ Group Stage ถึงก่อน R32 kickoff แก้ได้ แต่หัก 5 คะแนนต่อหัวข้อที่เปลี่ยน</li>
-          <li>ถ้าไม่แก้ หรือเลือกทีม/ผู้เล่นเดิม ไม่ถูกหักคะแนน</li>
-          <li>หลัง R32 kickoff จะล็อกถาวร</li>
+          <li>ทายผลการแข่งขันถูกต้อง เช่น ชนะ / เสมอ / แพ้ = <b>1 คะแนน</b></li>
+          <li>ทายสกอร์ตรงกับผลการแข่งขัน = <b>3 คะแนน</b></li>
+          <li>Perfect Gameday: หาก Gameday นั้นมีการแข่งขันตั้งแต่ <b>3 คู่ขึ้นไป</b> และผู้เล่นทาย <b>สกอร์ตรงทุกคู่</b> คะแนนรวมของ Gameday นั้นจะถูก <b>คูณ 2</b></li>
+          <li>รอบ Semi Final และ Third-place Match = คะแนนของทุกคู่ในรอบดังกล่าว <b>คูณ 2</b></li>
+          <li>รอบ Final = คะแนนของคู่ชิงชนะเลิศ <b>คูณ 3</b></li>
         </ul>
       </div>
       <div class="rules-section">
-        <h4>FAQ</h4>
+        <h4>❓ FAQ</h4>
         <div class="rules-note">
-          <b>Q: ส่งคำทายแล้วแก้ได้ไหม?</b><br>ได้ก่อน deadline ของ Gameday นั้น<br><br>
-          <b>Q: คะแนนอัปเดตเมื่อไหร่?</b><br>หลัง Admin ใส่ผลการแข่งขันและระบบคำนวณคะแนน<br><br>
-          <b>Q: ถ้าไม่ได้ทายบางคู่?</b><br>คู่นั้นจะไม่ได้คะแนน
+          <b>Q: ส่งคำทายแล้วแก้ได้ไหม?</b><br>ได้ จนกว่าจะถึง Kickoff ของคู่แรกใน Gameday นั้น<br><br>
+          <b>Q: การแก้คำทายผลการแข่งขันถูกหักคะแนนไหม?</b><br>ไม่ถูกหักคะแนน<br><br>
+          <b>Q: ถ้าทายแล้วลืมกดบันทึก?</b><br>ระบบจะนับเฉพาะคำทายที่กดบันทึก / ยืนยันสำเร็จแล้วเท่านั้น<br><br>
+          <b>Q: คะแนนโบนัสคิดเมื่อไหร่?</b><br>หลังจบรอบ Final<br><br>
+          <b>Q: ถ้ายังไม่ได้ทายโบนัสจะเกิดอะไรขึ้น?</b><br>จะไม่ได้รับคะแนนโบนัสในหัวข้อนั้น<br><br>
+          <b>Q: ตารางคะแนนอัปเดตเมื่อไหร่?</b><br>หลัง Admin บันทึกผลการแข่งขันและระบบคำนวณคะแนน
         </div>
       </div>
     </div>
@@ -968,10 +998,10 @@ function renderStandings(){
   const playerByName={};allPlayers.forEach(pl=>playerByName[pl.name]=pl);
 
   function bonusPickHtml(pl){
-    if(!pl)return`<div class="lb-bonus-picks"><span class="lb-pick empty">⏳ ยังไม่ได้ส่งโบนัส</span></div>`;
+    if(!pl)return`<div class="lb-bonus-picks"><span class="lb-pick empty">⏳ ยังไม่ทายโบนัส</span></div>`;
     const hasChamp=!!pl.champ,hasScorer=!!pl.scorer;
     if(!hasChamp&&!hasScorer){
-      return`<div class="lb-bonus-picks"><span class="lb-pick empty">⏳ ยังไม่ได้ส่งโบนัส</span></div>`;
+      return`<div class="lb-bonus-picks"><span class="lb-pick empty">⏳ ยังไม่ทายโบนัส</span></div>`;
     }
     const chips=[];
     if(hasChamp)chips.push(`<span class="lb-pick">🏆 ${getFlag(pl.champ)||''}<span>${pl.champ}</span></span>`);
@@ -1012,12 +1042,12 @@ function renderAnalytics(){
   const insightCards=[];
   // นำอยู่ตอนนี้
   if(ranked[0])insightCards.push({icon:'🥇',text:`<b>${ranked[0][0]}</b> นำอยู่ตอนนี้ด้วย <b>${ranked[0][1].pts} แต้ม</b>`});
-  // ใครทายถูกมากสุด
-  const mostCorrect=ranked.reduce((a,b)=>((b[1].exact*3+b[1].correct)>(a[1].exact*3+a[1].correct)?b:a),ranked[0]);
-  if(mostCorrect)insightCards.push({icon:'🔥',text:`<b>${mostCorrect[0]}</b> ทายถูกมากสุด <b>${mostCorrect[1].exact+mostCorrect[1].correct} คู่</b>`});
-  // ใครทายเป๊ะมากสุด
+  // ใครทายผลถูกมากสุด (ชนะ/เสมอ/แพ้ ไม่รวมสกอร์เป๊ะ)
+  const mostResultCorrect=ranked.reduce((a,b)=>(b[1].correct>a[1].correct?b:a),ranked[0]);
+  if(mostResultCorrect)insightCards.push({icon:'🔥',text:`<b>${mostResultCorrect[0]}</b> ทายผลถูกมากสุด <b>${mostResultCorrect[1].correct} คู่</b>`});
+  // ใครทายสกอร์เป๊ะมากสุด
   const mostExact=ranked.reduce((a,b)=>(b[1].exact>a[1].exact?b:a),ranked[0]);
-  if(mostExact&&mostExact[1].exact>0)insightCards.push({icon:'🎯',text:`<b>${mostExact[0]}</b> ทายสกอร์เป๊ะมากสุด <b>${mostExact[1].exact} คู่</b>`});
+  if(mostExact)insightCards.push({icon:'🎯',text:`<b>${mostExact[0]}</b> ทายสกอร์เป๊ะมากสุด <b>${mostExact[1].exact} คู่</b>`});
   // ทีมแชมป์ยอดนิยม
   const champVotes={};allPlayers.forEach(p=>{if(p.champ)champVotes[p.champ]=(champVotes[p.champ]||0)+1;});
   const topChamp=Object.entries(champVotes).sort((a,b)=>b[1]-a[1])[0];
