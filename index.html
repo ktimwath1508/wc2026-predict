@@ -231,6 +231,26 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .sponsor-wordmark{font-size:11px;font-weight:800;color:#fff;letter-spacing:.2px;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.35)}
 .sponsor-divider{width:1px;height:18px;background:rgba(255,255,255,.24)}
 
+.hero-links{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:9px;position:relative;z-index:1}
+.hero-link{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:28px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.10);color:#fff;text-decoration:none;font-family:var(--display);font-size:11px;font-weight:700;line-height:1;cursor:pointer;backdrop-filter:blur(6px);box-shadow:none}
+.hero-link:active{transform:translateY(1px);background:rgba(255,255,255,.16)}
+.hero-link.rules{background:rgba(245,197,24,.18);border-color:rgba(245,197,24,.38);color:var(--gold-soft)}
+.rules-modal{position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:1000;display:none;align-items:flex-end;justify-content:center;padding:16px}
+.rules-modal.open{display:flex}
+.rules-sheet{width:100%;max-width:520px;max-height:86vh;overflow-y:auto;background:#fff;border-radius:18px 18px 14px 14px;box-shadow:0 18px 60px rgba(0,0,0,.35);padding:16px 16px 18px;color:var(--ink)}
+.rules-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.rules-head h3{font-family:var(--display);font-size:17px;font-weight:800;color:var(--pitch);margin:0}
+.rules-close{width:32px;height:32px;border-radius:50%;border:none;background:#f1f5f0;color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
+.rules-section{border-top:1px solid #eef1ed;padding-top:11px;margin-top:11px}
+.rules-section:first-of-type{border-top:none;padding-top:0;margin-top:0}
+.rules-section h4{font-family:var(--display);font-size:13.5px;font-weight:800;color:#33503f;margin-bottom:7px}
+.rules-list{font-size:12.5px;line-height:1.75;color:#334155;padding-left:17px}
+.rules-list li{margin-bottom:2px}
+.rules-note{font-size:12px;line-height:1.65;background:#f8faf7;border:1px solid #e7eee5;border-radius:10px;padding:9px 10px;color:#475569}
+.official-link-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.official-link-row a{display:flex;align-items:center;justify-content:center;text-decoration:none;border:1.5px solid #d8e0d6;border-radius:10px;padding:10px 8px;color:var(--pitch);font-family:var(--display);font-size:12px;font-weight:800;background:#fbfdfb}
+@media(max-width:380px){.hero-link{font-size:10.5px;padding:6px 8px}.official-link-row{grid-template-columns:1fr}}
+
 
 .bonus-inline.saved{border-color:#bbf7d0;background:linear-gradient(135deg,#f8fff9,#fffdf2)}
 .bonus-view-row{display:grid;grid-template-columns:116px 1fr auto;gap:8px;align-items:center;background:#fff;border:1px solid #e6eee4;border-radius:10px;padding:8px 10px;margin-bottom:8px}
@@ -328,6 +348,62 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
       <img src="data:image/jpeg;base64,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" alt="Amorn Clinic">
       <div class="sponsor-divider"></div>
       <span class="sponsor-wordmark">ชินกฤต เทรดดิ้ง</span>
+    </div>
+    <div class="hero-links" aria-label="Official links">
+      <a class="hero-link" href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=&wtw-filter=ALL" target="_blank" rel="noopener noreferrer">📅 Fixtures</a>
+      <a class="hero-link" href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings" target="_blank" rel="noopener noreferrer">🏆 Standings</a>
+      <button type="button" class="hero-link rules" onclick="openRulesModal()">📖 Rules / FAQ</button>
+    </div>
+  </div>
+  <div id="rules-modal" class="rules-modal" onclick="if(event.target===this)closeRulesModal()">
+    <div class="rules-sheet" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+      <div class="rules-head">
+        <h3 id="rules-title">Rules & FAQ</h3>
+        <button type="button" class="rules-close" onclick="closeRulesModal()" aria-label="Close">×</button>
+      </div>
+      <div class="rules-section">
+        <h4>Official Links</h4>
+        <div class="official-link-row">
+          <a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=&wtw-filter=ALL" target="_blank" rel="noopener noreferrer">📅 Match & Fixtures</a>
+          <a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings" target="_blank" rel="noopener noreferrer">🏆 FIFA Standings</a>
+        </div>
+        <div class="rules-note" style="margin-top:8px">Top Goal Scorer จะเพิ่มลิงก์ภายหลังเมื่อ FIFA เปิดหน้าข้อมูลอย่างเป็นทางการ</div>
+      </div>
+      <div class="rules-section">
+        <h4>Scoring Rules</h4>
+        <ul class="rules-list">
+          <li>ทายผลถูก เช่น ชนะ / เสมอ / แพ้ = 1 คะแนน</li>
+          <li>ทายสกอร์ตรง = 3 คะแนน</li>
+          <li>Perfect Gameday: ถ้า GD นั้นมีอย่างน้อย 3 คู่ และทายสกอร์ตรงทุกคู่ ได้คะแนนรวมของ GD นั้น ×2</li>
+          <li>Semi Final และ Third-place match = คะแนนคู่นั้น ×2</li>
+          <li>Final = คะแนนคู่นั้น ×3</li>
+        </ul>
+      </div>
+      <div class="rules-section">
+        <h4>Prediction Deadline</h4>
+        <ul class="rules-list">
+          <li>แต่ละ Gameday ปิดรับก่อนคู่แรกของ Gameday นั้นเริ่มแข่งขัน</li>
+          <li>หลังปิดรับแล้วจะแก้คำทายของ Gameday นั้นไม่ได้</li>
+          <li>Gameday ใหม่จะแสดงให้ทายหลัง 14:00 น. ของวันนั้น</li>
+        </ul>
+      </div>
+      <div class="rules-section">
+        <h4>Bonus Prediction</h4>
+        <ul class="rules-list">
+          <li>แก้ฟรีได้ก่อน kickoff GD1</li>
+          <li>หลังจบ Group Stage ถึงก่อน R32 kickoff แก้ได้ แต่หัก 5 คะแนนต่อหัวข้อที่เปลี่ยน</li>
+          <li>ถ้าไม่แก้ หรือเลือกทีม/ผู้เล่นเดิม ไม่ถูกหักคะแนน</li>
+          <li>หลัง R32 kickoff จะล็อกถาวร</li>
+        </ul>
+      </div>
+      <div class="rules-section">
+        <h4>FAQ</h4>
+        <div class="rules-note">
+          <b>Q: ส่งคำทายแล้วแก้ได้ไหม?</b><br>ได้ก่อน deadline ของ Gameday นั้น<br><br>
+          <b>Q: คะแนนอัปเดตเมื่อไหร่?</b><br>หลัง Admin ใส่ผลการแข่งขันและระบบคำนวณคะแนน<br><br>
+          <b>Q: ถ้าไม่ได้ทายบางคู่?</b><br>คู่นั้นจะไม่ได้คะแนน
+        </div>
+      </div>
     </div>
   </div>
   <nav class="nav">
@@ -1361,6 +1437,18 @@ function updateCountdown(){
     renderPredict();
   }
 }
+
+function openRulesModal(){
+  const m=document.getElementById('rules-modal');
+  if(m)m.classList.add('open');
+}
+function closeRulesModal(){
+  const m=document.getElementById('rules-modal');
+  if(m)m.classList.remove('open');
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeRulesModal();
+});
 
 // ── UPDATE HERO RANK ──────────────────────────────────────────
 function updateHeroRank(){
