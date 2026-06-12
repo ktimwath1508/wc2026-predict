@@ -205,6 +205,10 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .btn-primary{width:100%;padding:13px;background:var(--pitch);color:#fff;border:none;border-radius:var(--r-sm);font-size:15px;font-weight:700;font-family:var(--display);cursor:pointer;margin-top:4px}
 .btn-primary:active{transform:translateY(1px)}
 
+.admin-waiting{opacity:.92}
+.admin-match-item.disabled{opacity:.62}
+.admin-match-item.disabled input{background:#f1f5f0!important;color:#94a3b8!important;border-color:#e2e8df!important}
+
 /* LOGIN */
 .login-hero{background:repeating-linear-gradient(90deg,transparent 0 38px,rgba(255,255,255,.03) 38px 76px),radial-gradient(130% 90% at 80% -10%,var(--pitch2),var(--pitch));color:#fff;padding:44px 24px 48px;text-align:center;position:relative;overflow:hidden}
 .login-hero::after{content:"";position:absolute;right:-50px;top:-50px;width:200px;height:200px;border:2px solid var(--line);border-radius:50%}
@@ -1192,7 +1196,6 @@ function selectAdmChamp(name){
 // ── ADMIN TAB ──────────────────────────────────────────────────
 function renderAdmin(){
   const content=document.getElementById('admin-content');
-  const lockedGDs=getGDs().filter(gd=>isGDLocked(gd));
   let html=`<div class="admin-card">
     <h3>🏆 ผลแชมป์ / ดาวซัลโว</h3>
     <label style="font-size:12px;font-weight:700;color:#33503f;display:block;margin-bottom:4px">ทีมแชมป์จริง</label>
@@ -1217,42 +1220,53 @@ function renderAdmin(){
     <span id="adm-add-err" style="font-size:11px;color:var(--bad);margin-left:8px;display:none"></span>
   </div>`;
 
-  // Result entry per locked GD — accordion
-  lockedGDs.forEach((gd,idx)=>{
+  // Result entry per GD that is already open for prediction — accordion
+  // Admin เห็น GD ที่เปิดให้ทายแล้วทั้งหมด แต่กรอกผลได้เฉพาะ GD ที่ kickoff แล้วเท่านั้น
+  const visibleGDs=getGDs().filter(gd=>isGDOpen(gd));
+  visibleGDs.forEach((gd,idx)=>{
     const ms=gdMatches(gd);
     const doneCount=ms.filter(m=>m.score1!==''&&m.score2!=='').length;
     const total=ms.length;
-    const isOpen=idx===lockedGDs.length-1; // เปิด GD ล่าสุดไว้ก่อน
-    const badgeCls=doneCount===total?'ab-done':doneCount>0?'ab-partial':'ab-none';
-    const badgeTxt=doneCount===total?`✓ ครบ ${total} คู่`:doneCount>0?`${doneCount}/${total} คู่`:`0/${total} คู่`;
-    html+=`<div class="accordion" id="acc-${gd}">
+    const locked=isGDLocked(gd);
+    const isOpen=idx===visibleGDs.length-1; // เปิด GD ล่าสุดที่ visible ไว้ก่อน
+    let badgeCls='ab-none', badgeTxt='⏳ รอ kickoff';
+    if(locked){
+      badgeCls=doneCount===total?'ab-done':doneCount>0?'ab-partial':'ab-none';
+      badgeTxt=doneCount===total?`✓ ครบ ${total} คู่`:doneCount>0?`${doneCount}/${total} คู่`:`พร้อมกรอกผล`;
+    }
+    const firstKick=gdFirstKick(gd);
+    const kickoffTxt=firstKick?`${String(firstKick.getDate()).padStart(2,'0')}/${String(firstKick.getMonth()+1).padStart(2,'0')} ${String(firstKick.getHours()).padStart(2,'0')}:${String(firstKick.getMinutes()).padStart(2,'0')}`:'';
+    html+=`<div class="accordion ${locked?'':'admin-waiting'}" id="acc-${gd}">
       <div class="accordion-head" onclick="toggleAcc('${gd}')">
         <div class="accordion-head-left">
           <div>
             <div class="accordion-title">📋 GD${gd} · ${fmtDate(ms[0]?.gd_label||'')}</div>
-            <div class="accordion-sub">กรอกผลจริง</div>
+            <div class="accordion-sub">${locked?'กรอกผลจริง':'เปิดให้ทายแล้ว · รอ kickoff '+kickoffTxt}</div>
           </div>
           <span class="accordion-badge ${badgeCls}" id="acc-badge-${gd}">${badgeTxt}</span>
         </div>
         <span class="accordion-arrow ${isOpen?'open':''}" id="acc-arrow-${gd}">▼</span>
       </div>
       <div class="accordion-body ${isOpen?'open':''}" id="acc-body-${gd}">`;
+    if(!locked){
+      html+=`<div style="font-size:12px;color:var(--warn);background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 10px;margin:10px 0">⏳ GD นี้เปิดให้ทายแล้ว แต่จะกรอกผลได้หลัง kickoff คู่แรก (${kickoffTxt})</div>`;
+    }
     ms.forEach(m=>{
       const has=m.score1!==''&&m.score2!=='';
-      html+=`<div class="admin-match-item">
+      html+=`<div class="admin-match-item ${locked?'':'disabled'}">
         <div class="admin-match-name">${getFlag(m.team1)||''} ${m.team1} vs ${m.team2} ${getFlag(m.team2)||''} <span style="font-size:11px;color:var(--muted)">${m.time_th} น.</span></div>
         <div class="score-pair">
-          <input type="number" min="0" max="99" id="ar1-${m.match_id}" value="${m.score1}" placeholder="–" inputmode="numeric">
+          <input type="number" min="0" max="99" id="ar1-${m.match_id}" value="${m.score1}" placeholder="–" inputmode="numeric" ${locked?'':'disabled'}>
           <span style="color:var(--muted);font-weight:700">–</span>
-          <input type="number" min="0" max="99" id="ar2-${m.match_id}" value="${m.score2}" placeholder="–" inputmode="numeric">
-          <button class="btn-sm" onclick="saveResult('${m.match_id}','${gd}')">บันทึก</button>
+          <input type="number" min="0" max="99" id="ar2-${m.match_id}" value="${m.score2}" placeholder="–" inputmode="numeric" ${locked?'':'disabled'}>
+          <button class="btn-sm" onclick="saveResult('${m.match_id}','${gd}')" ${locked?'':'disabled style="opacity:.45;cursor:not-allowed;background:#94a3b8"'}>${locked?'บันทึก':'รอ kickoff'}</button>
           <span class="result-ok" id="adm-ok-${m.match_id}" style="display:${has?'inline':'none'}">${has?`✓ ${m.score1}–${m.score2}`:''}</span>
         </div>
       </div>`;
     });
     html+=`</div></div>`;
   });
-  if(!lockedGDs.length)html+=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">ยังไม่มี GD ที่เริ่มแข่งแล้ว</div>`;
+  if(!visibleGDs.length)html+=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">ยังไม่มี GD ที่เปิดให้ทาย</div>`;
 
   content.innerHTML=html;
 
@@ -1301,6 +1315,7 @@ function renderAdmin(){
 }
 
 async function saveResult(mid,gd){
+  if(!isGDLocked(gd)){toast('ยังไม่ถึง kickoff — ยังกรอกผลไม่ได้');return;}
   const s1=document.getElementById('ar1-'+mid)?.value??'';
   const s2=document.getElementById('ar2-'+mid)?.value??'';
   if(s1===''||s2==='')return toast('ใส่สกอร์ทั้งสองฝั่ง');
@@ -1515,6 +1530,9 @@ function updateCountdown(){
   if(document.getElementById('tab-view')?.classList.contains('active')){
     curViewGD=gd;
     renderViewChips();
+  }
+  if(document.getElementById('tab-admin')?.classList.contains('active')){
+    renderAdmin();
   }
 }
 
