@@ -917,13 +917,18 @@ async function submitAllPreds(gd){
 }
 
 // ── VIEW TAB ───────────────────────────────────────────────────
-function renderViewChips(){
+function renderViewChips(forceCurrent=true){
   const gds=getGDs();
-  if(!curViewGD)curViewGD=getCurrentGD();
+  const currentGD=getCurrentGD();
+  // ค่า default ของหน้า "ผลทาย" ให้ล้อกับหน้าทายผลเสมอ
+  // เช่น หลัง 14:00 แล้วหน้าทายย้ายไป GD2 หน้า ผลทาย จะเปิด Day 2 ให้อัตโนมัติ
+  if(forceCurrent||!curViewGD||!gds.includes(curViewGD))curViewGD=currentGD;
   document.getElementById('view-chips').innerHTML=gds.map(gd=>{
     return`<button class="chip ${gd===curViewGD?'on':''}" onclick="selectViewGD('${gd}')">Day ${gd}</button>`;
   }).join('');
   renderViewGrid(curViewGD);
+  const activeChip=document.querySelector('#view-chips .chip.on');
+  if(activeChip)activeChip.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
 }
 function selectViewGD(gd){curViewGD=gd;document.querySelectorAll('#view-chips .chip').forEach((b,i)=>b.classList.toggle('on',getGDs()[i]===gd));renderViewGrid(gd);}
 function renderViewGrid(gd){
@@ -1058,8 +1063,8 @@ function renderAnalytics(){
   function joinNames(names){if(names.length===1)return`<b>${names[0]}</b>`;if(names.length===2)return`<b>${names[0]}</b> และ <b>${names[1]}</b>`;return`<b>${names.slice(0,-1).join('</b>, <b>')}</b> และ <b>${names[names.length-1]}</b>`;}
   // นำอยู่ตอนนี้
   if(ranked[0]){const topPts=ranked[0][1].pts;const leaders=ranked.filter(([,s])=>s.pts===topPts).map(([n])=>n);const plural=leaders.length>1?' ร่วมกัน':'';insightCards.push({icon:'🥇',text:`${joinNames(leaders)} นำอยู่ตอนนี้${plural}ด้วย <b>${topPts} แต้ม</b>`});}
-  // ใครทายผลถูกมากสุด
-  if(ranked[0]){const maxC=Math.max(...ranked.map(([,s])=>s.correct));const topC=ranked.filter(([,s])=>s.correct===maxC).map(([n])=>n);if(maxC>0)insightCards.push({icon:'🔥',text:`${joinNames(topC)} ทายผลถูกมากสุด${topC.length>1?' ร่วมกัน':''} <b>${maxC} คู่</b>`});}
+  // ใครทายไม่ผิดมากสุด: นับรวมทั้ง "ทายผลถูก" และ "ทายสกอร์เป๊ะ"
+  if(ranked[0]){const maxC=Math.max(...ranked.map(([,s])=>s.correct+s.exact));const topC=ranked.filter(([,s])=>s.correct+s.exact===maxC).map(([n])=>n);if(maxC>0)insightCards.push({icon:'🔥',text:`${joinNames(topC)} ทายไม่ผิดมากสุด${topC.length>1?' ร่วมกัน':''} <b>${maxC} คู่</b>`});}
   // ใครทายสกอร์เป๊ะมากสุด
   if(ranked[0]){const maxE=Math.max(...ranked.map(([,s])=>s.exact));const topE=ranked.filter(([,s])=>s.exact===maxE).map(([n])=>n);if(maxE>0)insightCards.push({icon:'🎯',text:`${joinNames(topE)} ทายสกอร์เป๊ะมากสุด${topE.length>1?' ร่วมกัน':''} <b>${maxE} คู่</b>`});}
   // ทีมแชมป์ยอดนิยม
@@ -1387,7 +1392,7 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
     document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
     document.getElementById('tab-'+tab).classList.add('active');
     if(tab==='predict')renderPredict();
-    if(tab==='view')renderViewChips();
+    if(tab==='view')renderViewChips(true);
     if(tab==='standings'){renderStandings();updateHeroRank();}
     if(tab==='analytics')renderAnalytics();
     if(tab==='admin')renderAdmin();
@@ -1495,10 +1500,12 @@ function updateCountdown(){
   if(!allMatches.length)return;
   const gd=getCurrentGD();
   const locked=isGDLocked(gd);
-  if(locked){renderPredict();return;}
-  // re-render predict tab เพื่ออัปเดต countdown inline
+  // re-render predict/view tab เพื่ออัปเดต GD หลัง 14:00 หรือหลัง deadline
   if(document.getElementById('tab-predict')?.classList.contains('active')){
     renderPredict();
+  }
+  if(document.getElementById('tab-view')?.classList.contains('active')){
+    renderViewChips(true);
   }
 }
 
