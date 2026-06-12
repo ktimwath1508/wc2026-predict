@@ -55,10 +55,33 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .nav-btn.active{color:var(--pitch);font-weight:700}
 
 /* CHIPS */
-.chip-row{display:flex;gap:5px;overflow-x:auto;padding:0 14px 10px;scrollbar-width:none}
+.chip-row{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding:14px 14px 16px;
+  scrollbar-width:none;
+}
 .chip-row::-webkit-scrollbar{display:none}
-.chip{flex-shrink:0;padding:6px 13px;border-radius:999px;border:1.5px solid #d8e0d6;background:#fff;color:var(--muted);font-size:12px;font-family:var(--display);font-weight:600;cursor:pointer;transition:all .15s}
-.chip.on{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+.chip{
+  flex-shrink:0;
+  padding:8px 16px;
+  border-radius:999px;
+  border:1.5px solid #d8e0d6;
+  background:#fff;
+  color:var(--muted);
+  font-size:12px;
+  font-family:var(--display);
+  font-weight:700;
+  cursor:pointer;
+  transition:all .15s;
+}
+.chip.on{
+  background:var(--gold);
+  color:var(--ink);
+  border-color:var(--gold);
+  box-shadow:0 4px 12px rgba(245,197,24,.25);
+}
 
 /* MATCH CARD */
 .match-card{background:var(--card);border-radius:var(--r);padding:13px 14px;margin:0 12px 10px;box-shadow:var(--shadow-sm);border:1px solid #eaefe8;transition:opacity .2s}
