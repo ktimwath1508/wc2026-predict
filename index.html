@@ -396,7 +396,7 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
           คำทายของทั้ง 2 คู่ใน <b>Game Date 1</b> จะถูกล็อกพร้อมกันทั้งหมด และไม่สามารถแก้ไขได้อีก
         </div>
         <ul class="rules-list" style="margin-top:8px">
-          <li>Gameday ถัดไปจะเปิดให้ทายเวลา <b>14:00 น.</b></li>
+          <li>แต่ละ Game Date จะเปิดให้ทายล่วงหน้า <b>12 ชั่วโมง</b>ก่อน kickoff คู่แรก</li>
           <li>ระบบจะไม่แสดงฟอร์มทายผลของ Gameday ใหม่ก่อนเวลาที่กำหนด</li>
           <li>ระบบจะนับเฉพาะคำทายที่กด <b>บันทึก / ยืนยัน</b> สำเร็จแล้วเท่านั้น</li>
         </ul>
@@ -498,12 +498,12 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 const SHEET_ID='1SjdZTyrpf4x1CKpzro-Rs5qYxDNCAfxZyHL2a6kaubs';
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbzLq7AXp3KDTtuWFpeHqEEqD0shcJuxWHnbS80fAG77BtFBH6VAObVOm0YWQwC4SODlPA/exec';
 const GROUP_STAGE_END=new Date('2026-06-28T23:00:00+07:00');
-const OPEN_HOUR=14; // เปิดให้ทาย GD ถัดไปเวลา 14:00
+const OPEN_BEFORE_HOURS=12; // เปิดให้ทาย GD ล่วงหน้า 12 ชั่วโมงก่อน kickoff คู่แรกของ GD
 
 const csvURL=s=>`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(s)}&t=${Date.now()}`;
 let user=null,allMatches=[],allPreds=[],allPlayers=[],settings={};
 let champSelected='',origChamp='',origScorer='',admChampSelected='';
-let chartLine=null,chartStack=null,chartRank=null,curViewGD=null;
+let chartLine=null,chartStack=null,chartRank=null,curViewGD=null,curPredictGD=null;
 
 const TEAMS=[
   {name:'Mexico',fc:'mx'},{name:'South Korea',fc:'kr'},{name:'Czech Republic',fc:'cz'},{name:'South Africa',fc:'za'},
@@ -565,35 +565,28 @@ function gdFirstKick(gd){const ms=gdMatches(gd);if(!ms.length)return null;return
 function gdLastKick(gd){const ms=gdMatches(gd);if(!ms.length)return null;return ms.reduce((max,m)=>{const t=thTime(m.date_th,m.time_th);return t>max?t:max;},thTime(ms[0].date_th,ms[0].time_th));}
 function isGDLocked(gd){const fk=gdFirstKick(gd);return fk&&new Date()>=fk;}
 
+function getGDOpenTime(gd){
+  const fk=gdFirstKick(gd);
+  if(!fk)return null;
+  return new Date(fk.getTime() - OPEN_BEFORE_HOURS*60*60*1000);
+}
+function isGDOpen(gd){
+  const open=getGDOpenTime(gd);
+  return open&&new Date()>=open;
+}
 function getCurrentGD(){
   const now=new Date();
   const gds=getGDs();
-  for(let i=0;i<gds.length;i++){
-    const gd=gds[i];
-    const fk=gdFirstKick(gd);
-    if(!fk)continue;
-    if(now<fk){
-      // ยังไม่ kickoff — เช็คว่าถึง 14:00 ของวัน gd_label แล้วหรือยัง
-      const lbl=gdMatches(gd)[0]?.gd_label||'';
-      if(lbl){
-        const openTime=new Date(lbl+'T'+String(OPEN_HOUR).padStart(2,'0')+':00:00+07:00');
-        if(now>=openTime)return gd; // เปิดให้ทายแล้ว
-      }
-      // ยังไม่ถึง 14:00 → แสดง GD ก่อนหน้า
-      return i>0?gds[i-1]:gd;
-    }
-    // now >= fk: GD นี้ kickoff แล้ว เช็คว่าจะสลับไป GD ถัดไปหรือยัง
-    if(i<gds.length-1){
-      const nextGD=gds[i+1];
-      const nextLbl=gdMatches(nextGD)[0]?.gd_label||'';
-      if(nextLbl){
-        const nextOpen=new Date(nextLbl+'T'+String(OPEN_HOUR).padStart(2,'0')+':00:00+07:00');
-        if(now>=nextOpen)continue; // สลับไป GD ถัดไปแล้ว (loop ต่อ)
-      }
-      return gd; // ยังอยู่ใน GD นี้
-    }
+  if(!gds.length)return '1';
+  // GD ปัจจุบัน = GD ล่าสุดที่เปิดให้ทายแล้ว
+  // เปิดล่วงหน้า 12 ชั่วโมงก่อน kickoff คู่แรกของ GD นั้น และปิดรับตอน kickoff คู่แรก
+  let current=gds[0];
+  for(const gd of gds){
+    const open=getGDOpenTime(gd);
+    if(open&&now>=open)current=gd;
+    else break;
   }
-  return gds[gds.length-1]||'1';
+  return current;
 }
 
 // ── SCORING ────────────────────────────────────────────────────
@@ -644,7 +637,10 @@ function markDirty(mid){
 }
 
 function renderPredict(){
-  const gd=getCurrentGD();
+  const currentGD=getCurrentGD();
+  const gds=getGDs();
+  if(!curPredictGD||!gds.includes(curPredictGD)||+curPredictGD>+currentGD)curPredictGD=currentGD;
+  const gd=curPredictGD;
   const matches=gdMatches(gd);
   const locked=isGDLocked(gd);
   const gdLabel=matches[0]?.gd_label||gd;
@@ -666,7 +662,13 @@ function renderPredict(){
   const inputDis=(hasBonus||bDis)?'disabled':'';
   const saveDis=bDis?'disabled':'';
 
-  let html=`<div class="bonus-inline${bonusSavedClass}" id="bonus-card">
+  const visibleGDs=gds.filter(x=>+x<=+currentGD);
+  let html='';
+  if(visibleGDs.length>1){
+    html+=`<div class="chip-row" id="predict-chips">${visibleGDs.map(x=>`<button class="chip ${x===gd?'on':''}" onclick="selectPredictGD('${x}')">Day ${x}</button>`).join('')}</div>`;
+  }
+
+  html+=`<div class="bonus-inline${bonusSavedClass}" id="bonus-card">
     <div class="bonus-inline-head">
       <h3>⭐ ทายโบนัส <span style="font-weight:400;font-size:13px;color:var(--muted)">แชมป์ / ดาวซัลโว</span></h3>
       <span class="bsp ${bClass}">${bLabel}</span>
@@ -801,6 +803,11 @@ function renderPredict(){
   initBonusInline(bonusStatus,pl);
 }
 
+function selectPredictGD(gd){
+  curPredictGD=gd;
+  renderPredict();
+}
+
 function initBonusInline(status,pl){
   const panel=document.getElementById('bonus-edit-panel');
   const inp=document.getElementById('b-champ-inp');
@@ -917,20 +924,21 @@ async function submitAllPreds(gd){
 }
 
 // ── VIEW TAB ───────────────────────────────────────────────────
-function renderViewChips(forceCurrent=true){
-  const gds=getGDs();
+function renderViewChips(){
   const currentGD=getCurrentGD();
-  // ค่า default ของหน้า "ผลทาย" ให้ล้อกับหน้าทายผลเสมอ
-  // เช่น หลัง 14:00 แล้วหน้าทายย้ายไป GD2 หน้า ผลทาย จะเปิด Day 2 ให้อัตโนมัติ
-  if(forceCurrent||!curViewGD||!gds.includes(curViewGD))curViewGD=currentGD;
+  const gds=getGDs().filter(gd=>+gd<=+currentGD);
+  curViewGD=currentGD;
   document.getElementById('view-chips').innerHTML=gds.map(gd=>{
     return`<button class="chip ${gd===curViewGD?'on':''}" onclick="selectViewGD('${gd}')">Day ${gd}</button>`;
   }).join('');
   renderViewGrid(curViewGD);
-  const activeChip=document.querySelector('#view-chips .chip.on');
-  if(activeChip)activeChip.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
 }
-function selectViewGD(gd){curViewGD=gd;document.querySelectorAll('#view-chips .chip').forEach((b,i)=>b.classList.toggle('on',getGDs()[i]===gd));renderViewGrid(gd);}
+function selectViewGD(gd){
+  curViewGD=gd;
+  const visible=getGDs().filter(x=>+x<=+getCurrentGD());
+  document.querySelectorAll('#view-chips .chip').forEach((b,i)=>b.classList.toggle('on',visible[i]===gd));
+  renderViewGrid(gd);
+}
 function renderViewGrid(gd){
   const matches=gdMatches(gd);const players=allPlayers.map(p=>p.name);
   if(!matches.length){document.getElementById('view-list').innerHTML='<div class="empty">ไม่มีแมตช์</div>';return;}
@@ -1063,7 +1071,7 @@ function renderAnalytics(){
   function joinNames(names){if(names.length===1)return`<b>${names[0]}</b>`;if(names.length===2)return`<b>${names[0]}</b> และ <b>${names[1]}</b>`;return`<b>${names.slice(0,-1).join('</b>, <b>')}</b> และ <b>${names[names.length-1]}</b>`;}
   // นำอยู่ตอนนี้
   if(ranked[0]){const topPts=ranked[0][1].pts;const leaders=ranked.filter(([,s])=>s.pts===topPts).map(([n])=>n);const plural=leaders.length>1?' ร่วมกัน':'';insightCards.push({icon:'🥇',text:`${joinNames(leaders)} นำอยู่ตอนนี้${plural}ด้วย <b>${topPts} แต้ม</b>`});}
-  // ใครทายไม่ผิดมากสุด: นับรวมทั้ง "ทายผลถูก" และ "ทายสกอร์เป๊ะ"
+  // ใครทายไม่ผิดมากสุด = ทายผลถูก + ทายสกอร์เป๊ะ
   if(ranked[0]){const maxC=Math.max(...ranked.map(([,s])=>s.correct+s.exact));const topC=ranked.filter(([,s])=>s.correct+s.exact===maxC).map(([n])=>n);if(maxC>0)insightCards.push({icon:'🔥',text:`${joinNames(topC)} ทายไม่ผิดมากสุด${topC.length>1?' ร่วมกัน':''} <b>${maxC} คู่</b>`});}
   // ใครทายสกอร์เป๊ะมากสุด
   if(ranked[0]){const maxE=Math.max(...ranked.map(([,s])=>s.exact));const topE=ranked.filter(([,s])=>s.exact===maxE).map(([n])=>n);if(maxE>0)insightCards.push({icon:'🎯',text:`${joinNames(topE)} ทายสกอร์เป๊ะมากสุด${topE.length>1?' ร่วมกัน':''} <b>${maxE} คู่</b>`});}
@@ -1392,7 +1400,7 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
     document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
     document.getElementById('tab-'+tab).classList.add('active');
     if(tab==='predict')renderPredict();
-    if(tab==='view')renderViewChips(true);
+    if(tab==='view')renderViewChips();
     if(tab==='standings'){renderStandings();updateHeroRank();}
     if(tab==='analytics')renderAnalytics();
     if(tab==='admin')renderAdmin();
@@ -1499,13 +1507,14 @@ function startCountdown(){
 function updateCountdown(){
   if(!allMatches.length)return;
   const gd=getCurrentGD();
-  const locked=isGDLocked(gd);
-  // re-render predict/view tab เพื่ออัปเดต GD หลัง 14:00 หรือหลัง deadline
+  // ถ้า GD ใหม่เปิดแล้ว ให้ทั้งหน้า Predict และ ผลทาย ขยับไป GD ปัจจุบันพร้อมกัน
+  if(curPredictGD!==gd)curPredictGD=gd;
   if(document.getElementById('tab-predict')?.classList.contains('active')){
     renderPredict();
   }
   if(document.getElementById('tab-view')?.classList.contains('active')){
-    renderViewChips(true);
+    curViewGD=gd;
+    renderViewChips();
   }
 }
 
