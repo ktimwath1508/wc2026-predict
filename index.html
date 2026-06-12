@@ -630,9 +630,35 @@ function getBonusStatus(){
 }
 
 // ── PREDICT TAB ────────────────────────────────────────────────
+function draftKey(gd){return `wc2026_draft_${user||'guest'}_GD${gd}`;}
+function getPredictionDraft(gd){
+  try{return JSON.parse(localStorage.getItem(draftKey(gd))||'{}')||{};}catch(e){return {};}
+}
+function savePredictionDraft(gd,draft){
+  try{localStorage.setItem(draftKey(gd),JSON.stringify(draft||{}));}catch(e){}
+}
+function setPredictionDraft(gd,mid,s1,s2){
+  const draft=getPredictionDraft(gd);
+  draft[mid]={s1:String(s1??''),s2:String(s2??'')};
+  savePredictionDraft(gd,draft);
+}
+function removePredictionDraft(gd,mid){
+  const draft=getPredictionDraft(gd);
+  if(draft[mid]){delete draft[mid];savePredictionDraft(gd,draft);}
+}
+function clearPredictionDraft(gd){try{localStorage.removeItem(draftKey(gd));}catch(e){}}
+function hasDraftForGD(gd){return Object.keys(getPredictionDraft(gd)||{}).length>0;}
+function hasUnsavedPredictionDraft(){
+  if(document.querySelectorAll('.score-input.dirty').length>0)return true;
+  return hasDraftForGD(curPredictGD||getCurrentGD());
+}
 function validateScore(inp){inp.value=inp.value.replace(/[^0-9]/g,'');if(inp.value.length>1)inp.value=String(parseInt(inp.value,10)||0);if(inp.value!==''&&+inp.value>99)inp.value='99';updateDirtyHint();}
 function updateDirtyHint(){const hint=document.getElementById('dirty-hint');const btn=document.getElementById('btn-submit-gd');const dirty=document.querySelectorAll('.score-input.dirty').length>0;if(hint)hint.style.display=dirty?'block':'none';if(btn&&!btn.disabled)btn.classList.toggle('dirty-state',dirty);}
 function markDirty(mid){
+  const s1=document.getElementById('s1-'+mid)?.value??'';
+  const s2=document.getElementById('s2-'+mid)?.value??'';
+  const m=getMatch(mid);
+  if(m)setPredictionDraft(m.gd,mid,s1,s2);
   document.getElementById('s1-'+mid)?.classList.add('dirty');
   document.getElementById('s2-'+mid)?.classList.add('dirty');
   const st=document.getElementById('status-'+mid);
@@ -751,14 +777,18 @@ function renderPredict(){
 
   if(!matches.length){html+=`<div class="empty">ไม่มีแมตช์</div>`;document.getElementById('predict-list').innerHTML=html;return;}
 
+  const gdDraft=getPredictionDraft(gd);
   matches.forEach(m=>{
     const pred=getPred(m.match_id);
-    const v1=pred?.s1??'',v2=pred?.s2??'';
+    const d=gdDraft[m.match_id];
+    const hasDraft=!!d;
+    const v1=hasDraft?(d.s1??''):(pred?.s1??'');
+    const v2=hasDraft?(d.s2??''):(pred?.s2??'');
     const hasPred=!!(pred&&pred.s1!==''&&pred.s2!=='');
+    const draftIsDifferent=hasDraft&&(!hasPred||String(pred.s1)!==String(v1)||String(pred.s2)!==String(v2));
     const hasRes=m.score1!==''&&m.score2!=='';
     const sc=calcPts(pred,m);
     const mult=getStageMult(m.stage);
-    const inputDisabled=locked||hasPred;
     let badge;
     if(hasRes&&hasPred){
       const bc=sc===3?'b-exact':sc===1?'b-correct':'b-wrong';
@@ -774,9 +804,12 @@ function renderPredict(){
       badge=`<span class="badge b-open">${m.stage==='Group'?'กลุ่ม '+(m.group||''):m.stage}${mult>1?' ×'+mult:''}</span>`;
     }
     const f1=getFlag(m.team1),f2=getFlag(m.team2);
-    const editHtml=(!locked&&hasPred&&!hasRes)?`<button class="edit-btn" type="button" onclick="enterEditMode('${m.match_id}')">✎ แก้คำทาย</button>`:'';
-    const statusText=locked?'ปิดรับแล้ว':hasPred?'บันทึกแล้ว • กดแก้ได้จนถึง deadline':'';
-    html+=`<div class="match-card ${locked?'locked':''} ${hasPred?'saved':''}" id="card-${m.match_id}">
+    const editHtml=(!locked&&hasPred&&!hasRes)
+      ? (draftIsDifferent?`<button class="edit-btn" type="button" onclick="confirmEdit('${m.match_id}')">✓ ยืนยันการแก้ไข</button>`:`<button class="edit-btn" type="button" onclick="enterEditMode('${m.match_id}')">✎ แก้คำทาย</button>`)
+      : '';
+    const statusText=locked?'ปิดรับแล้ว':draftIsDifferent?'มีการแก้ไขที่ยังไม่ยืนยัน':hasPred?'บันทึกแล้ว • กดแก้ได้จนถึง deadline':'';
+    const inputDisabled=locked||(hasPred&&!draftIsDifferent);
+    html+=`<div class="match-card ${locked?'locked':''} ${hasPred&&!draftIsDifferent?'saved':''}" id="card-${m.match_id}">
       <div class="match-meta"><span class="match-time">${m.date_th} · ${m.time_th} น.</span>${badge}</div>
       <div class="teams-row">
         <div class="team-name">${f1?`<span class="team-flag">${f1}</span>`:''}<span>${m.team1}</span></div>
@@ -804,6 +837,11 @@ function renderPredict(){
   }
 
   document.getElementById('predict-list').innerHTML=html;
+  Object.keys(gdDraft).forEach(mid=>{
+    document.getElementById('s1-'+mid)?.classList.add('dirty');
+    document.getElementById('s2-'+mid)?.classList.add('dirty');
+  });
+  updateDirtyHint();
   initBonusInline(bonusStatus,pl);
 }
 
@@ -912,6 +950,7 @@ async function submitAllPreds(gd){
         body:JSON.stringify({type:'prediction',match_id:mid,player_name:user,pred_score1:+s1,pred_score2:+s2})});
       const idx=allPreds.findIndex(p=>p.match_id===mid&&p.player_name===user);
       if(idx>=0){allPreds[idx].s1=s1;allPreds[idx].s2=s2;}else allPreds.push({match_id:mid,player_name:user,s1,s2});
+      removePredictionDraft(gd,mid);
       ok++;
     }catch(e){fail++;}
   }
@@ -1399,6 +1438,7 @@ async function savePrediction(mid,s1,s2){
       body:JSON.stringify({type:'prediction',match_id:mid,player_name:user,pred_score1:+s1,pred_score2:+s2})});
     const idx=allPreds.findIndex(p=>p.match_id===mid&&p.player_name===user);
     if(idx>=0){allPreds[idx].s1=s1;allPreds[idx].s2=s2;}else allPreds.push({match_id:mid,player_name:user,s1,s2});
+    const m=getMatch(mid);if(m)removePredictionDraft(m.gd,mid);
     toast('บันทึกคำทายแล้ว ✓');
     setTimeout(()=>renderPredict(),250);
   }catch(e){
@@ -1522,10 +1562,14 @@ function startCountdown(){
 function updateCountdown(){
   if(!allMatches.length)return;
   const gd=getCurrentGD();
-  // ถ้า GD ใหม่เปิดแล้ว ให้ทั้งหน้า Predict และ ผลทาย ขยับไป GD ปัจจุบันพร้อมกัน
-  if(curPredictGD!==gd)curPredictGD=gd;
-  if(document.getElementById('tab-predict')?.classList.contains('active')){
-    renderPredict();
+  const predictActive=document.getElementById('tab-predict')?.classList.contains('active');
+  const hasDraft=predictActive&&hasUnsavedPredictionDraft();
+
+  // ถ้า user กำลังพิมพ์สกอร์ค้างไว้ ห้าม render ทับช่อง input เพราะจะล้าง draft ที่ยังไม่ส่ง
+  if(!hasDraft&&curPredictGD!==gd)curPredictGD=gd;
+  if(predictActive){
+    if(!hasDraft)renderPredict();
+    else updateDirtyHint();
   }
   if(document.getElementById('tab-view')?.classList.contains('active')){
     curViewGD=gd;
