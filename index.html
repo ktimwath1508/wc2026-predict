@@ -1053,14 +1053,14 @@ function renderAnalytics(){
   const exactPreds=allPreds.filter(p=>{const m=allMatches.find(x=>x.match_id===p.match_id);return m&&calcPts(p,m)===3;}).length;
   // Smart Insights
   const insightCards=[];
+  // helper: join names with "และ" for ties
+  function joinNames(names){if(names.length===1)return`<b>${names[0]}</b>`;if(names.length===2)return`<b>${names[0]}</b> และ <b>${names[1]}</b>`;return`<b>${names.slice(0,-1).join('</b>, <b>')}</b> และ <b>${names[names.length-1]}</b>`;}
   // นำอยู่ตอนนี้
-  if(ranked[0])insightCards.push({icon:'🥇',text:`<b>${ranked[0][0]}</b> นำอยู่ตอนนี้ด้วย <b>${ranked[0][1].pts} แต้ม</b>`});
-  // ใครทายผลถูกมากสุด (ชนะ/เสมอ/แพ้ ไม่รวมสกอร์เป๊ะ)
-  const mostResultCorrect=ranked.reduce((a,b)=>(b[1].correct>a[1].correct?b:a),ranked[0]);
-  if(mostResultCorrect)insightCards.push({icon:'🔥',text:`<b>${mostResultCorrect[0]}</b> ทายผลถูกมากสุด <b>${mostResultCorrect[1].correct} คู่</b>`});
+  if(ranked[0]){const topPts=ranked[0][1].pts;const leaders=ranked.filter(([,s])=>s.pts===topPts).map(([n])=>n);const plural=leaders.length>1?' ร่วมกัน':'';insightCards.push({icon:'🥇',text:`${joinNames(leaders)} นำอยู่ตอนนี้${plural}ด้วย <b>${topPts} แต้ม</b>`});}
+  // ใครทายผลถูกมากสุด
+  if(ranked[0]){const maxC=Math.max(...ranked.map(([,s])=>s.correct));const topC=ranked.filter(([,s])=>s.correct===maxC).map(([n])=>n);if(maxC>0)insightCards.push({icon:'🔥',text:`${joinNames(topC)} ทายผลถูกมากสุด${topC.length>1?' ร่วมกัน':''} <b>${maxC} คู่</b>`});}
   // ใครทายสกอร์เป๊ะมากสุด
-  const mostExact=ranked.reduce((a,b)=>(b[1].exact>a[1].exact?b:a),ranked[0]);
-  if(mostExact)insightCards.push({icon:'🎯',text:`<b>${mostExact[0]}</b> ทายสกอร์เป๊ะมากสุด <b>${mostExact[1].exact} คู่</b>`});
+  if(ranked[0]){const maxE=Math.max(...ranked.map(([,s])=>s.exact));const topE=ranked.filter(([,s])=>s.exact===maxE).map(([n])=>n);if(maxE>0)insightCards.push({icon:'🎯',text:`${joinNames(topE)} ทายสกอร์เป๊ะมากสุด${topE.length>1?' ร่วมกัน':''} <b>${maxE} คู่</b>`});}
   // ทีมแชมป์ยอดนิยม
   const champVotes={};allPlayers.forEach(p=>{if(p.champ)champVotes[p.champ]=(champVotes[p.champ]||0)+1;});
   const topChamp=Object.entries(champVotes).sort((a,b)=>b[1]-a[1])[0];
