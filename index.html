@@ -979,16 +979,23 @@ function calcStandings(upToGD=null){
   return Object.entries(sc).sort((a,b)=>b[1].pts-a[1].pts);
 }
 
+function getDenseRanks(standings){
+  const out={};let dr=1;
+  standings.forEach(([name,s],i)=>{
+    if(i>0&&s.pts<standings[i-1][1].pts)dr=i+1;
+    out[name]=dr;
+  });
+  return out;
+}
 function getRankChange(){
   const doneGDs=getGDs().filter(gd=>gdMatches(gd).some(m=>m.score1!==''&&m.score2!==''));
   if(doneGDs.length<2)return{};
   const prev=doneGDs[doneGDs.length-2];
-  const rankNow=calcStandings().map(([n],i)=>({name:n,rank:i+1}));
-  const rankPrev=calcStandings(prev).map(([n],i)=>({name:n,rank:i+1}));
+  const rankNow=getDenseRanks(calcStandings());
+  const rankPrev=getDenseRanks(calcStandings(prev));
   const changes={};
-  rankNow.forEach(({name,rank})=>{
-    const p=rankPrev.find(r=>r.name===name);
-    changes[name]=p?p.rank-rank:0; // positive = improved
+  Object.keys(rankNow).forEach(name=>{
+    changes[name]=(rankPrev[name]??rankNow[name])-rankNow[name]; // positive = improved
   });
   return changes;
 }
@@ -1008,8 +1015,15 @@ function renderStandings(){
     return`<div class="lb-bonus-picks">${chips.join('')}</div>`;
   }
 
+  // Build dense rank map: same pts → same rank
+  const denseRanks=[];let dr=1;
+  ranked.forEach(([,s],i)=>{
+    if(i>0&&s.pts<ranked[i-1][1].pts)dr=i+1;
+    denseRanks.push(dr);
+  });
+
   document.getElementById('standings-list').innerHTML=ranked.map(([name,s],i)=>{
-    const pl=playerByName[name];const isMe=name===user;const rk=i+1;
+    const pl=playerByName[name];const isMe=name===user;const rk=denseRanks[i];
     const exactPts=s.exactPts;const correctPts=s.correctPts;
     const breakdown=[];
     if(s.exact>0)breakdown.push(`🎯 เป๊ะ ${s.exact} นัด (+${exactPts})`);
@@ -1020,7 +1034,7 @@ function renderStandings(){
     if(s.bonus>0)breakdown.push(`🎁 Bonus +${s.bonus}`);
     if(s.penalty>0)breakdown.push(`<span style="color:var(--bad)">✂️ แก้ Bonus ${s.penaltyCount} ครั้ง (−${s.penalty})</span>`);
     return`<div class="lb-row${isMe?' me':''}">
-      <div class="rank-n${rk<=3?' r'+rk:''}">${medals[i]||rk}</div>
+      <div class="rank-n${rk<=3?' r'+rk:''}">${medals[rk-1]||rk}</div>
       <div class="lb-info">
         <div class="lb-name">${isMe?'👤 ':''}<span style="${isMe?'color:var(--pitch)':''}">${name}</span></div>
         ${bonusPickHtml(pl)}
@@ -1096,7 +1110,9 @@ function renderAnalytics(){
         });
       });
       const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-      return sorted.findIndex(([n])=>n===pl.name)+1;
+      const myIdx=sorted.findIndex(([n])=>n===pl.name);
+      const myScore=sorted[myIdx]?.[1]??0;
+      return sorted.filter(([,v],j)=>j<myIdx&&v>myScore).length+1;
     });
     return{label:pl.name,data,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.2,pointRadius:3};})};
   if(chartRank)chartRank.destroy();
@@ -1504,10 +1520,12 @@ function updateHeroRank(){
   const ranked=calcStandings();
   const idx=ranked.findIndex(([n])=>n===user);
   if(idx<0)return;
-  const rank=idx+1;
-  const pts=ranked[idx][1].pts;
+  // Dense rank: count how many distinct higher scores exist above user
+  const myPts=ranked[idx][1].pts;
+  const rank=ranked.filter(([,s],j)=>j<idx&&s.pts>myPts).length+1;
+  const pts=myPts;
   const medals=['🥇','🥈','🥉'];
-  rankEl.textContent=`${medals[idx]||'#'+rank} อันดับ ${rank} · ${pts} แต้ม`;
+  rankEl.textContent=`${medals[rank-1]||'#'+rank} อันดับ ${rank} · ${pts} แต้ม`;
 }
 
 initLogin();
