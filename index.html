@@ -525,7 +525,27 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 const SHEET_ID='1SjdZTyrpf4x1CKpzro-Rs5qYxDNCAfxZyHL2a6kaubs';
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbzLq7AXp3KDTtuWFpeHqEEqD0shcJuxWHnbS80fAG77BtFBH6VAObVOm0YWQwC4SODlPA/exec';
 const GROUP_STAGE_END=new Date('2026-06-28T23:00:00+07:00');
-const OPEN_BEFORE_HOURS=12; // เปิดให้ทาย GD ล่วงหน้า 12 ชั่วโมงก่อน kickoff คู่แรกของ GD
+// เปิดให้ทาย GD โดยอิงจาก kickoff คู่แรกของ GD นั้น
+// ใช้วิธี "ลบชั่วโมงจาก kickoff" เพื่อเลี่ยงปัญหา timezone/date จากการ set เวลา 14:00 ตรง ๆ
+// ผลลัพธ์ที่ต้องการ:
+// 23:00 -> เปิด 14:00 วันเดียวกัน
+// 00:00 -> เปิด 14:00 วันก่อน
+// 01:00 -> เปิด 14:00 วันก่อน
+// 02:00 -> เปิด 14:00 วันก่อน
+// 03:00 -> เปิด 14:00 วันก่อน
+// 04:00 -> เปิด 14:00 วันก่อน
+function getOpenHoursBeforeKickoff(kickoff){
+  const h = kickoff.getHours();
+
+  if(h === 23) return 9;
+  if(h === 0) return 10;
+  if(h === 1) return 11;
+  if(h === 2) return 12;
+  if(h === 3) return 13;
+  if(h === 4) return 14;
+
+  return 12; // default: เคสเวลาอื่น ๆ เปิดล่วงหน้า 12 ชั่วโมง
+}
 
 const csvURL=s=>`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(s)}&t=${Date.now()}`;
 let user=null,allMatches=[],allPreds=[],allPlayers=[],settings={};
@@ -595,7 +615,9 @@ function isGDLocked(gd){const fk=gdFirstKick(gd);return fk&&new Date()>=fk;}
 function getGDOpenTime(gd){
   const fk=gdFirstKick(gd);
   if(!fk)return null;
-  return new Date(fk.getTime() - OPEN_BEFORE_HOURS*60*60*1000);
+
+  const hoursBefore = getOpenHoursBeforeKickoff(fk);
+  return new Date(fk.getTime() - hoursBefore*60*60*1000);
 }
 function isGDOpen(gd){
   const open=getGDOpenTime(gd);
