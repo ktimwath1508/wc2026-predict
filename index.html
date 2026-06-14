@@ -212,7 +212,11 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .outcome-label{font-size:10.5px;color:var(--muted);margin-top:2px}
 .outcome-legend{display:flex;flex-direction:column;gap:7px}
 .outcome-item{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;background:#f8faf7;border:1px solid #edf3eb;border-radius:9px;padding:7px 9px}
-.outcome-name{display:flex;align-items:center;gap:5px;font-weight:700;color:#334155}
+.outcome-name{display:flex;align-items:center;gap:7px;font-weight:700;color:#334155}
+.outcome-dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.9)}
+.outcome-dot.exact{background:#1f9d55}
+.outcome-dot.correct{background:#d97706}
+.outcome-dot.wrong{background:#e2e8f0;border:1px solid #cbd5e1}
 .outcome-count{font-weight:800;color:var(--pitch);white-space:nowrap}
 .outcome-count span{font-weight:600;color:var(--muted);font-size:10.5px}
 @media(max-width:380px){.outcome-grid{grid-template-columns:1fr}.outcome-donut-wrap{width:140px;height:140px}.outcome-donut-wrap canvas{width:140px!important;height:140px!important}}
@@ -1242,9 +1246,9 @@ function renderAnalytics(){
           <div class="outcome-center"><div class="outcome-total">${totalOutcomePreds}</div><div class="outcome-label">คำทาย</div></div>
         </div>
         <div class="outcome-legend">
-          <div class="outcome-item"><span class="outcome-name">🎯 เป๊ะ</span><span class="outcome-count">${outcomeCounts.exact} <span>ครั้ง · ${outcomePct(outcomeCounts.exact)}%</span></span></div>
-          <div class="outcome-item"><span class="outcome-name">🟢 ผลถูก</span><span class="outcome-count">${outcomeCounts.correct} <span>ครั้ง · ${outcomePct(outcomeCounts.correct)}%</span></span></div>
-          <div class="outcome-item"><span class="outcome-name">🔴 ผิด</span><span class="outcome-count">${outcomeCounts.wrong} <span>ครั้ง · ${outcomePct(outcomeCounts.wrong)}%</span></span></div>
+          <div class="outcome-item"><span class="outcome-name"><i class="outcome-dot exact"></i>เป๊ะ</span><span class="outcome-count">${outcomeCounts.exact} <span>ครั้ง · ${outcomePct(outcomeCounts.exact)}%</span></span></div>
+          <div class="outcome-item"><span class="outcome-name"><i class="outcome-dot correct"></i>ผลถูก</span><span class="outcome-count">${outcomeCounts.correct} <span>ครั้ง · ${outcomePct(outcomeCounts.correct)}%</span></span></div>
+          <div class="outcome-item"><span class="outcome-name"><i class="outcome-dot wrong"></i>ผิด</span><span class="outcome-count">${outcomeCounts.wrong} <span>ครั้ง · ${outcomePct(outcomeCounts.wrong)}%</span></span></div>
         </div>
       </div>
       <div class="analytics-summary-foot">นับเฉพาะคำทายของผู้เล่นที่ร่วมแข่ง และเฉพาะแมตช์ที่รู้ผลแล้ว</div>
@@ -1254,7 +1258,7 @@ function renderAnalytics(){
   if(outcomeCanvas){
     chartOutcome=new Chart(outcomeCanvas.getContext('2d'),{
       type:'doughnut',
-      data:{labels:['🎯 เป๊ะ','🟢 ผลถูก','🔴 ผิด'],datasets:[{data:[outcomeCounts.exact,outcomeCounts.correct,outcomeCounts.wrong],backgroundColor:['#1f9d55','#d97706','#e2e8f0'],borderColor:'#ffffff',borderWidth:3,hoverOffset:3}]},
+      data:{labels:['เป๊ะ','ผลถูก','ผิด'],datasets:[{data:[outcomeCounts.exact,outcomeCounts.correct,outcomeCounts.wrong],backgroundColor:['#1f9d55','#d97706','#e2e8f0'],borderColor:'#ffffff',borderWidth:3,hoverOffset:3}]},
       options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} ครั้ง (${outcomePct(ctx.raw)}%)`}}}}
     });
   }
