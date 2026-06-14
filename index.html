@@ -195,6 +195,27 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .insight-card{background:var(--card);border-radius:var(--r-sm);padding:12px;text-align:center;border:1px solid #eaefe8}
 .insight-val{font-size:22px;font-weight:800;font-family:var(--display);color:var(--pitch)}
 .insight-label{font-size:11px;color:var(--muted);margin-top:3px}
+.analytics-summary-card{background:var(--card);border-radius:var(--r);padding:14px;border:1px solid #eaefe8;box-shadow:var(--shadow-sm);grid-column:span 2;text-align:left}
+.analytics-summary-title{font-family:var(--display);font-size:13px;font-weight:800;color:#33503f;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.tournament-progress-main{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:8px}
+.tournament-progress-num{font-family:var(--display);font-size:24px;font-weight:800;color:var(--pitch);line-height:1}
+.tournament-progress-num span{font-size:13px;color:var(--muted);font-weight:700}
+.tournament-progress-pct{font-family:var(--display);font-size:18px;font-weight:800;color:var(--gold);line-height:1}
+.progress-track{height:10px;background:#e8f0e6;border-radius:999px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--pitch),var(--gold));border-radius:999px;transition:width .35s ease}
+.analytics-summary-foot{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4}
+.outcome-grid{display:grid;grid-template-columns:132px 1fr;gap:12px;align-items:center}
+.outcome-donut-wrap{position:relative;width:132px;height:132px;margin:auto}
+.outcome-donut-wrap canvas{width:132px!important;height:132px!important}
+.outcome-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.outcome-total{font-family:var(--display);font-size:23px;font-weight:800;color:var(--pitch);line-height:1}
+.outcome-label{font-size:10.5px;color:var(--muted);margin-top:2px}
+.outcome-legend{display:flex;flex-direction:column;gap:7px}
+.outcome-item{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;background:#f8faf7;border:1px solid #edf3eb;border-radius:9px;padding:7px 9px}
+.outcome-name{display:flex;align-items:center;gap:5px;font-weight:700;color:#334155}
+.outcome-count{font-weight:800;color:var(--pitch);white-space:nowrap}
+.outcome-count span{font-weight:600;color:var(--muted);font-size:10.5px}
+@media(max-width:380px){.outcome-grid{grid-template-columns:1fr}.outcome-donut-wrap{width:140px;height:140px}.outcome-donut-wrap canvas{width:140px!important;height:140px!important}}
 
 /* ADMIN */
 .admin-card{background:var(--card);border-radius:var(--r);padding:16px;margin:0 12px 12px;box-shadow:var(--shadow-sm);border:1px solid #eaefe8}
@@ -550,7 +571,7 @@ function getOpenHoursBeforeKickoff(kickoff){
 const csvURL=s=>`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(s)}&t=${Date.now()}`;
 let user=null,allMatches=[],allPreds=[],allPlayers=[],settings={};
 let champSelected='',origChamp='',origScorer='',admChampSelected='';
-let chartLine=null,chartStack=null,chartRank=null,curViewGD=null,curPredictGD=null;
+let chartLine=null,chartStack=null,chartRank=null,chartOutcome=null,curViewGD=null,curPredictGD=null;
 
 // ผู้เล่นที่ยังให้ Login ได้ตามเดิม แต่ซ่อนออกจากหน้าการแข่งขัน / Dashboard / ผลทาย
 const EXCLUDED_FROM_GAME=['Dee+','Light','Neung','Off','Tum'];
@@ -1188,10 +1209,55 @@ function renderAnalytics(){
       <span style="font-size:22px">${c.icon}</span>
       <span style="font-size:13px;color:var(--ink);line-height:1.4">${c.text}</span>
     </div>`).join('')||`<div class="insight-card" style="grid-column:span 2"><div class="insight-val" style="font-size:14px">ยังไม่มีข้อมูล</div></div>`;
-  // stats summary row
+  // stats summary: split Match progress vs Prediction outcomes
+  const totalTournamentMatches=104;
+  const matchProgressPct=totalTournamentMatches?Math.round(completed.length/totalTournamentMatches*1000)/10:0;
+  const outcomeCounts={exact:0,correct:0,wrong:0};
+  gamePreds().forEach(p=>{
+    if(p.s1===''||p.s2==='')return;
+    const m=allMatches.find(x=>x.match_id===p.match_id);
+    if(!m||m.score1===''||m.score2==='')return;
+    const pts=calcPts(p,m);
+    if(pts===3)outcomeCounts.exact++;
+    else if(pts===1)outcomeCounts.correct++;
+    else if(pts===0)outcomeCounts.wrong++;
+  });
+  const totalOutcomePreds=outcomeCounts.exact+outcomeCounts.correct+outcomeCounts.wrong;
+  const outcomePct=(v)=>totalOutcomePreds?Math.round(v/totalOutcomePreds*100):0;
   document.getElementById('insight-cards').innerHTML+=`
-    <div class="insight-card"><div class="insight-val">${completed.length}</div><div class="insight-label">แมตช์ที่รู้ผลแล้ว</div></div>
-    <div class="insight-card"><div class="insight-val">${exactPreds}</div><div class="insight-label">ทายเป๊ะทั้งหมด</div></div>`;
+    <div class="analytics-summary-card">
+      <div class="analytics-summary-title">🏟️ Tournament Progress</div>
+      <div class="tournament-progress-main">
+        <div class="tournament-progress-num">${completed.length}<span> / ${totalTournamentMatches} นัด</span></div>
+        <div class="tournament-progress-pct">${matchProgressPct}%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${Math.min(matchProgressPct,100)}%"></div></div>
+      <div class="analytics-summary-foot">ความคืบหน้าของแมตช์ที่มีการบันทึกผลจริงแล้ว</div>
+    </div>
+    <div class="analytics-summary-card">
+      <div class="analytics-summary-title">📊 Prediction Outcomes</div>
+      <div class="outcome-grid">
+        <div class="outcome-donut-wrap">
+          <canvas id="chart-outcome"></canvas>
+          <div class="outcome-center"><div class="outcome-total">${totalOutcomePreds}</div><div class="outcome-label">คำทาย</div></div>
+        </div>
+        <div class="outcome-legend">
+          <div class="outcome-item"><span class="outcome-name">🎯 เป๊ะ</span><span class="outcome-count">${outcomeCounts.exact} <span>ครั้ง · ${outcomePct(outcomeCounts.exact)}%</span></span></div>
+          <div class="outcome-item"><span class="outcome-name">🟢 ผลถูก</span><span class="outcome-count">${outcomeCounts.correct} <span>ครั้ง · ${outcomePct(outcomeCounts.correct)}%</span></span></div>
+          <div class="outcome-item"><span class="outcome-name">🔴 ผิด</span><span class="outcome-count">${outcomeCounts.wrong} <span>ครั้ง · ${outcomePct(outcomeCounts.wrong)}%</span></span></div>
+        </div>
+      </div>
+      <div class="analytics-summary-foot">นับเฉพาะคำทายของผู้เล่นที่ร่วมแข่ง และเฉพาะแมตช์ที่รู้ผลแล้ว</div>
+    </div>`;
+  if(chartOutcome)chartOutcome.destroy();
+  const outcomeCanvas=document.getElementById('chart-outcome');
+  if(outcomeCanvas){
+    chartOutcome=new Chart(outcomeCanvas.getContext('2d'),{
+      type:'doughnut',
+      data:{labels:['🎯 เป๊ะ','🟢 ผลถูก','🔴 ผิด'],datasets:[{data:[outcomeCounts.exact,outcomeCounts.correct,outcomeCounts.wrong],backgroundColor:['#1f9d55','#d97706','#e2e8f0'],borderColor:'#ffffff',borderWidth:3,hoverOffset:3}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} ครั้ง (${outcomePct(ctx.raw)}%)`}}}}
+    });
+  }
 
   const doneGDs=getGDs().filter(gd=>gdMatches(gd).some(m=>m.score1!==''&&m.score2!==''));
   const colors=['#0b3d2e','#f5c518','#2563eb','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#be185d','#65a30d','#ea580c','#0f766e','#4338ca','#b45309'];
