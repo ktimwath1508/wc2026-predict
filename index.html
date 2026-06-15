@@ -685,7 +685,17 @@ function calcPts(pred,match){
 }
 function getPred(mid){return allPreds.find(p=>p.match_id===mid&&p.player_name===user);}
 function getMatch(mid){return allMatches.find(m=>m.match_id===mid);}
-function isMatchLocked(mid){const m=getMatch(mid);return m?isGDLocked(m.gd):true;}
+function isMatchLocked(mid){
+  const m=getMatch(mid);
+  if(!m)return true;
+  return new Date()>=thTime(m.date_th,m.time_th);
+}
+function getNextPredictionDeadline(gd){
+  const now=new Date();
+  const ms=gdMatches(gd).filter(m=>thTime(m.date_th,m.time_th)>now);
+  if(!ms.length)return null;
+  return ms.reduce((min,m)=>{const t=thTime(m.date_th,m.time_th);return t<min?t:min;},thTime(ms[0].date_th,ms[0].time_th));
+}
 function normalizeStage(stage){return String(stage||'').trim().toLowerCase().replace(/[\s_-]+/g,'');}
 function getStageMult(stage){
   const s=normalizeStage(stage);
@@ -753,7 +763,8 @@ function renderPredict(){
   if(!curPredictGD||!gds.includes(curPredictGD)||+curPredictGD>+currentGD)curPredictGD=currentGD;
   const gd=curPredictGD;
   const matches=gdMatches(gd);
-  const locked=isGDLocked(gd);
+  const locked=matches.length?matches.every(m=>isMatchLocked(m.match_id)):isGDLocked(gd);
+  const nextDeadline=getNextPredictionDeadline(gd);
   const gdLabel=matches[0]?.gd_label||gd;
   const bonusStatus=getBonusStatus();
   const pl=allPlayers.find(p=>p.name===user)||{};
@@ -837,29 +848,28 @@ function renderPredict(){
   html+=`<div class="sec-divider">Game Date ${gd} · ${fmtDate(gdLabel)}</div>`;
 
   if(!locked){
-    // Countdown bar inline
-    const fk=gdFirstKick(gd);
-    if(fk){
+    // Countdown bar inline: นับถอยหลังไปยังคู่ถัดไปที่จะล็อก
+    if(nextDeadline){
       const now=new Date();
-      const diff=fk-now;
+      const diff=nextDeadline-now;
       if(diff>0){
         const hrs=Math.floor(diff/3600000);
         const mins=Math.floor((diff%3600000)/60000);
         let timeStr=hrs>0?`${hrs} ชม. ${mins} น.`:`${mins} น.`;
         let barClass=hrs<1?'danger':hrs<6?'warn':'';
-        html+=`<div class="countdown-bar ${barClass}" id="countdown-bar">⏰ <span>Deadline Game Date ${gd} ใน</span> <span class="cd-time">${timeStr}</span></div>`;
+        html+=`<div class="countdown-bar ${barClass}" id="countdown-bar">⏰ <span>คู่ถัดไปล็อกใน</span> <span class="cd-time">${timeStr}</span></div>`;
       }
     }
-    const dl=fmtDeadline(gd);
-    if(dl)html+=`<div class="gd-deadline-note">ทายได้จนถึง <b>${dl}</b></div>`;
+    html+=`<div class="gd-deadline-note">แต่ละคู่แก้/ส่งคำทายได้จนถึง <b>เวลา kickoff ของคู่นั้น</b></div>`;
   }else{
-    html+=`<div class="gd-watching-note">🔒 Game Date ${gd} ล็อคแล้ว — กำลังติดตามผล</div>`;
+    html+=`<div class="gd-watching-note">🔒 Game Date ${gd} ปิดรับครบทุกคู่แล้ว — กำลังติดตามผล</div>`;
   }
 
   if(!matches.length){html+=`<div class="empty">ไม่มีแมตช์</div>`;document.getElementById('predict-list').innerHTML=html;return;}
 
   const gdDraft=getPredictionDraft(gd);
   matches.forEach(m=>{
+    const matchLocked=isMatchLocked(m.match_id);
     const pred=getPred(m.match_id);
     const d=gdDraft[m.match_id];
     const hasDraft=!!d;
@@ -875,9 +885,9 @@ function renderPredict(){
       const bc=sc===3?'b-exact':sc===1?'b-correct':'b-wrong';
       const bt=sc===3?`🎯 สกอร์เป๊ะ${mult>1?' ×'+mult:''}`:sc===1?'✓ ผลถูก':'✗ ผิด';
       badge=`<span class="badge ${bc}">${bt}</span>`;
-    }else if(locked&&hasPred){
+    }else if(matchLocked&&hasPred){
       badge=`<span class="badge b-locked">🔒 ${pred.s1}–${pred.s2}</span>`;
-    }else if(locked){
+    }else if(matchLocked){
       badge=`<span class="badge b-nopred">– ไม่ได้ทาย</span>`;
     }else if(hasPred){
       badge=`<span class="badge b-locked">✓ บันทึกแล้ว</span>`;
@@ -885,12 +895,12 @@ function renderPredict(){
       badge=`<span class="badge b-open">${m.stage==='Group'?'กลุ่ม '+(m.group||''):m.stage}${mult>1?' ×'+mult:''}</span>`;
     }
     const f1=getFlag(m.team1),f2=getFlag(m.team2);
-    const editHtml=(!locked&&hasPred&&!hasRes)
+    const editHtml=(!matchLocked&&hasPred&&!hasRes)
       ? (draftIsDifferent?`<button class="edit-btn" type="button" onclick="confirmEdit('${m.match_id}')">✓ ยืนยันการแก้ไข</button>`:`<button class="edit-btn" type="button" onclick="enterEditMode('${m.match_id}')">✎ แก้คำทาย</button>`)
       : '';
-    const statusText=locked?'ปิดรับแล้ว':draftIsDifferent?'มีการแก้ไขที่ยังไม่ยืนยัน':hasPred?'บันทึกแล้ว • กดแก้ได้จนถึง deadline':'';
-    const inputDisabled=locked||(hasPred&&!draftIsDifferent);
-    html+=`<div class="match-card ${locked?'locked':''} ${hasPred&&!draftIsDifferent?'saved':''}" id="card-${m.match_id}">
+    const statusText=matchLocked?'ปิดรับแล้ว':draftIsDifferent?'มีการแก้ไขที่ยังไม่ยืนยัน':hasPred?'บันทึกแล้ว • กดแก้ได้จนถึง kickoff คู่นี้':'';
+    const inputDisabled=matchLocked||(hasPred&&!draftIsDifferent);
+    html+=`<div class="match-card ${matchLocked?'locked':''} ${hasPred&&!draftIsDifferent?'saved':''}" id="card-${m.match_id}">
       <div class="match-meta"><span class="match-time">${m.date_th} · ${m.time_th} น.</span>${badge}</div>
       <div class="teams-row">
         <div class="team-name">${f1?`<span class="team-flag">${f1}</span>`:''}<span>${m.team1}</span></div>
@@ -909,8 +919,8 @@ function renderPredict(){
     </div>`;
   });
   if(!locked){
-    // แสดงปุ่ม submit เฉพาะถ้ายังมีคู่ที่ยังไม่ได้ทายเลย
-    const unsubmitted=matches.filter(m=>{const p=getPred(m.match_id);return !p||p.s1==='';});
+    // แสดงปุ่ม submit เฉพาะคู่ที่ยังไม่ kickoff และยังไม่ได้ทาย
+    const unsubmitted=matches.filter(m=>!isMatchLocked(m.match_id)).filter(m=>{const p=getPred(m.match_id);return !p||p.s1==='';});
     if(unsubmitted.length>0){
       html+=`<div class="dirty-hint" id="dirty-hint" style="display:none">⚠️ มีสกอร์ที่ยังไม่ได้ส่ง</div>
       <button class="btn-submit" id="btn-submit-gd" onclick="submitAllPreds('${gd}')">ส่งคำทาย GD${gd} (${unsubmitted.length} คู่)</button>`;
@@ -1009,20 +1019,21 @@ async function saveBonus(){
 }
 
 async function submitAllPreds(gd){
-  if(isGDLocked(gd)){
-    toast('ปิดรับคำทายของ Game Date นี้แล้ว');
+  const matches=gdMatches(gd);
+  const openMatches=matches.filter(m=>!isMatchLocked(m.match_id));
+  if(!openMatches.length){
+    toast('ปิดรับคำทายของ Game Date นี้ครบทุกคู่แล้ว');
     renderPredict();
     return;
   }
-  const matches=gdMatches(gd);
   const btn=document.getElementById('btn-submit-gd');
   const toSave=[];
-  for(const m of matches){
+  for(const m of openMatches){
     const s1=document.getElementById('s1-'+m.match_id)?.value??'';
     const s2=document.getElementById('s2-'+m.match_id)?.value??'';
     if(s1!==''&&s2!=='')toSave.push({mid:m.match_id,s1,s2});
   }
-  if(!toSave.length)return toast('กรุณากรอกสกอร์อย่างน้อย 1 คู่');
+  if(!toSave.length)return toast('กรุณากรอกสกอร์อย่างน้อย 1 คู่ที่ยังไม่ kickoff');
   if(btn){btn.disabled=true;btn.textContent='กำลังส่ง...';}
   let ok=0,fail=0;
   for(const {mid,s1,s2} of toSave){
