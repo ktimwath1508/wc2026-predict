@@ -210,6 +210,8 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .outcome-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
 .outcome-total{font-family:var(--display);font-size:23px;font-weight:800;color:var(--pitch);line-height:1}
 .outcome-label{font-size:10.5px;color:var(--muted);margin-top:2px}
+.outcome-accuracy{font-family:var(--display);font-size:13px;font-weight:800;color:#22c55e;line-height:1;margin-top:6px;text-shadow:0 0 8px rgba(34,197,94,.22)}
+.outcome-accuracy-label{font-size:9.5px;color:var(--muted);margin-top:2px;line-height:1.15}
 .outcome-legend{display:flex;flex-direction:column;gap:7px}
 .outcome-item{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;background:#f8faf7;border:1px solid #edf3eb;border-radius:9px;padding:7px 9px}
 .outcome-name{display:flex;align-items:center;gap:7px;font-weight:700;color:#334155}
@@ -1238,6 +1240,8 @@ function renderAnalytics(){
     else if(pts===0)outcomeCounts.wrong++;
   });
   const totalOutcomePreds=outcomeCounts.exact+outcomeCounts.correct+outcomeCounts.wrong;
+  const outcomeAccuracy=totalOutcomePreds?((outcomeCounts.exact+outcomeCounts.correct)/totalOutcomePreds*100):0;
+  const outcomeAccuracyTxt=outcomeAccuracy.toFixed(1).replace('.0','');
   const outcomePct=(v)=>totalOutcomePreds?Math.round(v/totalOutcomePreds*100):0;
   document.getElementById('insight-cards').innerHTML+=`
     <div class="analytics-summary-card">
@@ -1254,7 +1258,7 @@ function renderAnalytics(){
       <div class="outcome-grid">
         <div class="outcome-donut-wrap">
           <canvas id="chart-outcome"></canvas>
-          <div class="outcome-center"><div class="outcome-total">${totalOutcomePreds}</div><div class="outcome-label">คำทาย</div></div>
+          <div class="outcome-center"><div class="outcome-total">${totalOutcomePreds}</div><div class="outcome-label">คำทาย</div><div class="outcome-accuracy">${outcomeAccuracyTxt}%</div><div class="outcome-accuracy-label">Accuracy<br>(เป๊ะ + ผลถูก)</div></div>
         </div>
         <div class="outcome-legend">
           <div class="outcome-item"><span class="outcome-name"><i class="outcome-dot exact"></i>เป๊ะ</span><span class="outcome-count">${outcomeCounts.exact} <span>ครั้ง · ${outcomePct(outcomeCounts.exact)}%</span></span></div>
@@ -1316,15 +1320,81 @@ function renderAnalytics(){
 
   // Stacked bar % with tooltip showing count
   const totalPerPlayer=ranked.map(([,s])=>s.exact+s.correct+s.wrong||1);
+  const stackExactGlowPlugin={
+    id:'stackExactGlow',
+    beforeDatasetDraw(chart,args){
+      if(args.index===0){
+        const ctx=chart.ctx;
+        ctx.save();
+        ctx.shadowColor='rgba(34,197,94,.55)';
+        ctx.shadowBlur=8;
+        ctx.shadowOffsetX=0;
+        ctx.shadowOffsetY=0;
+      }
+    },
+    afterDatasetDraw(chart,args){
+      if(args.index===0)chart.ctx.restore();
+    }
+  };
   const sd={labels:ranked.map(([n])=>n),datasets:[
-    {label:'🎯 Exact',data:ranked.map(([,s],i)=>Math.round(s.exact/totalPerPlayer[i]*100)),rawData:ranked.map(([,s])=>s.exact),backgroundColor:'#22c55e'},
-    {label:'✓ Correct',data:ranked.map(([,s],i)=>Math.round(s.correct/totalPerPlayer[i]*100)),rawData:ranked.map(([,s])=>s.correct),backgroundColor:'#d6a84a'},
-    {label:'✗ Wrong',data:ranked.map(([,s],i)=>Math.round(s.wrong/totalPerPlayer[i]*100)),rawData:ranked.map(([,s])=>s.wrong),backgroundColor:'#e5e7eb'}
+    {
+      label:'🎯 Exact',
+      data:ranked.map(([,s],i)=>Math.round(s.exact/totalPerPlayer[i]*100)),
+      rawData:ranked.map(([,s])=>s.exact),
+      backgroundColor:'#22c55e',
+      borderColor:'rgba(255,255,255,.95)',
+      borderWidth:1.5,
+      borderSkipped:false,
+      borderRadius:2,
+      barPercentage:.72,
+      categoryPercentage:.72
+    },
+    {
+      label:'✓ Correct',
+      data:ranked.map(([,s],i)=>Math.round(s.correct/totalPerPlayer[i]*100)),
+      rawData:ranked.map(([,s])=>s.correct),
+      backgroundColor:'#c49a2c',
+      borderColor:'rgba(255,255,255,.75)',
+      borderWidth:1.5,
+      borderSkipped:false,
+      borderRadius:2,
+      barPercentage:.72,
+      categoryPercentage:.72
+    },
+    {
+      label:'✗ Wrong',
+      data:ranked.map(([,s],i)=>Math.round(s.wrong/totalPerPlayer[i]*100)),
+      rawData:ranked.map(([,s])=>s.wrong),
+      backgroundColor:'#e7ebef',
+      borderColor:'rgba(255,255,255,.75)',
+      borderWidth:1.5,
+      borderSkipped:false,
+      borderRadius:2,
+      barPercentage:.72,
+      categoryPercentage:.72
+    }
   ]};
   if(chartStack)chartStack.destroy();
-  chartStack=new Chart(document.getElementById('chart-stack').getContext('2d'),{type:'bar',data:sd,options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{labels:{font:{size:9},boxWidth:10}},tooltip:{callbacks:{label:ctx=>{const raw=ctx.dataset.rawData[ctx.dataIndex];return`${ctx.dataset.label}: ${raw} นัด (${ctx.raw}%)`;},title:ctx=>`${ctx[0].label} — รวม ${totalPerPlayer[ranked.findIndex(([n])=>n===ctx[0].label)]} นัด`}}},
-    scales:{x:{stacked:true,ticks:{font:{size:8}}},y:{stacked:true,beginAtZero:true,max:100,ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+  chartStack=new Chart(document.getElementById('chart-stack').getContext('2d'),{
+    type:'bar',
+    data:sd,
+    plugins:[stackExactGlowPlugin],
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{font:{size:9},boxWidth:10,usePointStyle:true,pointStyle:'rectRounded'}},
+        tooltip:{callbacks:{
+          label:ctx=>{const raw=ctx.dataset.rawData[ctx.dataIndex];return`${ctx.dataset.label}: ${raw} นัด (${ctx.raw}%)`;},
+          title:ctx=>`${ctx[0].label} — รวม ${totalPerPlayer[ranked.findIndex(([n])=>n===ctx[0].label)]} นัด`
+        }}
+      },
+      scales:{
+        x:{stacked:true,ticks:{font:{size:8}},grid:{display:false}},
+        y:{stacked:true,beginAtZero:true,max:100,ticks:{callback:v=>v+'%',font:{size:9}},grid:{color:'rgba(148,163,184,.18)'}}
+      }
+    }
+  });
 
   // Freq: real scores
   const rf={};completed.forEach(m=>{const k=normalizeScore(m.score1,m.score2);rf[k]=(rf[k]||0)+1;});
