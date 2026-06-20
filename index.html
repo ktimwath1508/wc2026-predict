@@ -214,8 +214,8 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .outcome-item{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;background:#f8faf7;border:1px solid #edf3eb;border-radius:9px;padding:7px 9px}
 .outcome-name{display:flex;align-items:center;gap:7px;font-weight:700;color:#334155}
 .outcome-dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.9)}
-.outcome-dot.exact{background:#0e7490}
-.outcome-dot.correct{background:#f59e0b}
+.outcome-dot.exact{background:#22c55e}
+.outcome-dot.correct{background:#818cf8}
 .outcome-dot.wrong{background:#e2e8f0;border:1px solid #cbd5e1}
 .outcome-count{font-weight:800;color:var(--pitch);white-space:nowrap}
 .outcome-count span{font-weight:600;color:var(--muted);font-size:10.5px}
@@ -787,7 +787,7 @@ function renderPredict(){
   const visibleGDs=gds.filter(x=>+x<=+currentGD);
   let html='';
   if(visibleGDs.length>1){
-    html+=`<div class="chip-row" id="predict-chips">${visibleGDs.map(x=>`<button class="chip ${x===gd?'on':''}" onclick="selectPredictGD('${x}')">Day ${x}</button>`).join('')}</div>`;
+    html+=`<div class="chip-row" id="predict-chips">${[...visibleGDs].reverse().map(x=>`<button class="chip ${x===gd?'on':''}" onclick="selectPredictGD('${x}')">Day ${x}</button>`).join('')}</div>`;
   }
 
   html+=`<div class="bonus-inline${bonusSavedClass}" id="bonus-card">
@@ -1269,7 +1269,7 @@ function renderAnalytics(){
   if(outcomeCanvas){
     chartOutcome=new Chart(outcomeCanvas.getContext('2d'),{
       type:'doughnut',
-      data:{labels:['เป๊ะ','ผลถูก','ผิด'],datasets:[{data:[outcomeCounts.exact,outcomeCounts.correct,outcomeCounts.wrong],backgroundColor:['#0e7490','#f59e0b','#e2e8f0'],borderColor:'#ffffff',borderWidth:3,hoverOffset:3}]},
+      data:{labels:['เป๊ะ','ผลถูก','ผิด'],datasets:[{data:[outcomeCounts.exact,outcomeCounts.correct,outcomeCounts.wrong],backgroundColor:['#22c55e','#818cf8','#e2e8f0'],borderColor:'#ffffff',borderWidth:3,hoverOffset:3}]},
       options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} ครั้ง (${outcomePct(ctx.raw)}%)`}}}}
     });
   }
@@ -1317,8 +1317,8 @@ function renderAnalytics(){
   // Stacked bar % with tooltip showing count
   const totalPerPlayer=ranked.map(([,s])=>s.exact+s.correct+s.wrong||1);
   const sd={labels:ranked.map(([n])=>n),datasets:[
-    {label:'🎯 Exact',data:ranked.map(([,s],i)=>Math.round(s.exact/totalPerPlayer[i]*100)),rawData:ranked.map(([,s])=>s.exact),backgroundColor:'#0e7490'},
-    {label:'✓ Correct',data:ranked.map(([,s],i)=>Math.round(s.correct/totalPerPlayer[i]*100)),rawData:ranked.map(([,s])=>s.correct),backgroundColor:'#f59e0b'},
+    {label:'🎯 Exact',data:ranked.map(([,s],i)=>Math.round(s.exact/totalPerPlayer[i]*100)),rawData:ranked.map(([,s])=>s.exact),backgroundColor:'#22c55e'},
+    {label:'✓ Correct',data:ranked.map(([,s],i)=>Math.round(s.correct/totalPerPlayer[i]*100)),rawData:ranked.map(([,s])=>s.correct),backgroundColor:'#818cf8'},
     {label:'✗ Wrong',data:ranked.map(([,s],i)=>Math.round(s.wrong/totalPerPlayer[i]*100)),rawData:ranked.map(([,s])=>s.wrong),backgroundColor:'#e2e8f0'}
   ]};
   if(chartStack)chartStack.destroy();
