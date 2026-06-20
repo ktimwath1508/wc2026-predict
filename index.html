@@ -197,6 +197,10 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .insight-label{font-size:11px;color:var(--muted);margin-top:3px}
 .analytics-summary-card{background:var(--card);border-radius:var(--r);padding:14px;border:1px solid #eaefe8;box-shadow:var(--shadow-sm);grid-column:span 2;text-align:left}
 .analytics-summary-title{font-family:var(--display);font-size:13px;font-weight:800;color:#33503f;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.outcome-title-row{justify-content:space-between;align-items:center;gap:10px}
+.outcome-title-row span:first-child{display:flex;align-items:center;gap:6px}
+.outcome-accuracy-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;font-family:var(--thai);font-size:10.5px;font-weight:800;white-space:nowrap;box-shadow:0 0 10px rgba(34,197,94,.12)}
+.outcome-accuracy-badge b{font-family:var(--display);font-size:12.5px;color:#16a34a;line-height:1}
 .tournament-progress-main{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:8px}
 .tournament-progress-num{font-family:var(--display);font-size:24px;font-weight:800;color:var(--pitch);line-height:1}
 .tournament-progress-num span{font-size:13px;color:var(--muted);font-weight:700}
@@ -1254,11 +1258,14 @@ function renderAnalytics(){
       <div class="analytics-summary-foot">ความคืบหน้าของแมตช์ที่มีการบันทึกผลจริงแล้ว</div>
     </div>
     <div class="analytics-summary-card">
-      <div class="analytics-summary-title">📊 Prediction Outcomes</div>
+      <div class="analytics-summary-title outcome-title-row">
+        <span>📊 Prediction Outcomes</span>
+        <span class="outcome-accuracy-badge">🎯 ทายไม่ผิด <b>${outcomeAccuracyTxt}%</b></span>
+      </div>
       <div class="outcome-grid">
         <div class="outcome-donut-wrap">
           <canvas id="chart-outcome"></canvas>
-          <div class="outcome-center"><div class="outcome-total">${totalOutcomePreds}</div><div class="outcome-label">คำทาย</div><div class="outcome-accuracy">${outcomeAccuracyTxt}%</div><div class="outcome-accuracy-label">Accuracy<br>(เป๊ะ + ผลถูก)</div></div>
+          <div class="outcome-center"><div class="outcome-total">${totalOutcomePreds}</div><div class="outcome-label">คำทาย</div></div>
         </div>
         <div class="outcome-legend">
           <div class="outcome-item"><span class="outcome-name"><i class="outcome-dot exact"></i>เป๊ะ</span><span class="outcome-count">${outcomeCounts.exact} <span>ครั้ง · ${outcomePct(outcomeCounts.exact)}%</span></span></div>
@@ -1266,7 +1273,7 @@ function renderAnalytics(){
           <div class="outcome-item"><span class="outcome-name"><i class="outcome-dot wrong"></i>ผิด</span><span class="outcome-count">${outcomeCounts.wrong} <span>ครั้ง · ${outcomePct(outcomeCounts.wrong)}%</span></span></div>
         </div>
       </div>
-      <div class="analytics-summary-foot">นับเฉพาะคำทายของผู้เล่นที่ร่วมแข่ง และเฉพาะแมตช์ที่รู้ผลแล้ว</div>
+      <div class="analytics-summary-foot">นับเฉพาะคำทายของผู้เล่นที่ร่วมแข่ง และเฉพาะแมตช์ที่รู้ผลแล้ว · ทายไม่ผิด = เป๊ะ + ผลถูก</div>
     </div>`;
   if(chartOutcome)chartOutcome.destroy();
   const outcomeCanvas=document.getElementById('chart-outcome');
