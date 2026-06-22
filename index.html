@@ -263,6 +263,27 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .admin-match-item.disabled{opacity:.62}
 .admin-match-item.disabled input{background:#f1f5f0!important;color:#94a3b8!important;border-color:#e2e8df!important}
 
+
+/* ADMIN RESULT CONFIRM */
+.admin-result-modal{position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:1200;display:none;align-items:center;justify-content:center;padding:18px}
+.admin-result-modal.open{display:flex}
+.admin-result-dialog{width:100%;max-width:440px;background:#fff;border-radius:18px;box-shadow:0 18px 60px rgba(0,0,0,.32);border:1px solid #eef1ed;overflow:hidden}
+.admin-result-head{padding:16px 16px 10px;border-bottom:1px solid #eef1ed}
+.admin-result-title{font-family:var(--display);font-size:17px;font-weight:800;color:#92400e;line-height:1.35}
+.admin-result-match{font-size:12px;color:var(--muted);font-weight:700;margin-top:5px;line-height:1.45}
+.admin-result-body{padding:13px 16px 4px;font-size:13px;line-height:1.75;color:#334155}
+.admin-result-body b{color:var(--pitch);font-weight:800}
+.admin-result-score{display:inline-flex;align-items:center;justify-content:center;margin:7px 0 2px;padding:6px 12px;border-radius:999px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-family:var(--display);font-weight:800;font-size:13px}
+.admin-result-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:8px;padding:14px 16px 16px}
+.admin-result-cancel,.admin-result-confirm{border:none;border-radius:11px;padding:12px 10px;font-family:var(--display);font-weight:800;font-size:13px;cursor:pointer}
+.admin-result-cancel{background:#f1f5f0;color:#475569}
+.admin-result-confirm{background:var(--pitch);color:#fff}
+.admin-result-cancel:active,.admin-result-confirm:active{transform:translateY(1px)}
+@media(max-width:380px){
+  .admin-result-dialog{border-radius:16px}
+  .admin-result-actions{grid-template-columns:1fr}
+}
+
 /* LOGIN */
 .login-hero{background:repeating-linear-gradient(90deg,transparent 0 38px,rgba(255,255,255,.03) 38px 76px),radial-gradient(130% 90% at 80% -10%,var(--pitch2),var(--pitch));color:#fff;padding:44px 24px 48px;text-align:center;position:relative;overflow:hidden}
 .login-hero::after{content:"";position:absolute;right:-50px;top:-50px;width:200px;height:200px;border:2px solid var(--line);border-radius:50%}
@@ -1567,11 +1588,93 @@ function renderAdmin(){
   };
 }
 
+function shouldWarnEarlyResult(mid){
+  const m=getMatch(mid);
+  if(!m)return false;
+  const kick=thTime(m.date_th,m.time_th);
+  if(!kick||Number.isNaN(kick.getTime()))return false;
+  const warnUntil=new Date(kick.getTime()+2*60*60*1000);
+  return new Date()<warnUntil;
+}
+
+function ensureAdminResultConfirmModal(){
+  let modal=document.getElementById('admin-result-confirm-modal');
+  if(modal)return modal;
+
+  modal=document.createElement('div');
+  modal.id='admin-result-confirm-modal';
+  modal.className='admin-result-modal';
+  modal.innerHTML=`
+    <div class="admin-result-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-result-title">
+      <div class="admin-result-head">
+        <div class="admin-result-title" id="admin-result-title">⚠️ เกมนี้อาจยังแข่งขันไม่จบ</div>
+        <div class="admin-result-match" id="admin-result-match"></div>
+      </div>
+      <div class="admin-result-body">
+        <p>โปรดตรวจสอบให้แน่ใจว่า <b>การแข่งขันสิ้นสุดลงแล้ว</b> และผลที่บันทึกเป็น <b>ผลเมื่อจบการแข่งขัน (Full Time)</b> ก่อนยืนยัน</p>
+        <div class="admin-result-score" id="admin-result-score"></div>
+        <p>หากยืนยัน ระบบจะบันทึกผลนี้ทันที และอาจมีผลต่อการคำนวณคะแนน รวมถึงการแจ้งเตือนไปยังผู้ใช้งาน</p>
+      </div>
+      <div class="admin-result-actions">
+        <button type="button" class="admin-result-cancel" id="admin-result-cancel">ยกเลิก</button>
+        <button type="button" class="admin-result-confirm" id="admin-result-confirm">ยืนยันการบันทึก</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function confirmAdminEarlyResult(mid,s1,s2){
+  const m=getMatch(mid);
+  if(!m)return Promise.resolve(true);
+
+  const modal=ensureAdminResultConfirmModal();
+  const matchEl=document.getElementById('admin-result-match');
+  const scoreEl=document.getElementById('admin-result-score');
+  const cancelBtn=document.getElementById('admin-result-cancel');
+  const confirmBtn=document.getElementById('admin-result-confirm');
+
+  const matchName=`${flagImg(m.flag1)||''} ${m.team1} vs ${m.team2} ${flagImg(m.flag2)||''}`;
+  matchEl.innerHTML=`${matchName} • ${m.date_th||''} ${m.time_th||''} น.`;
+  scoreEl.textContent=`ผลที่จะบันทึก: ${s1}–${s2}`;
+
+  modal.classList.add('open');
+  document.body.style.overflow='hidden';
+
+  return new Promise(resolve=>{
+    const close=(ok)=>{
+      modal.classList.remove('open');
+      document.body.style.overflow='';
+      cancelBtn.removeEventListener('click',onCancel);
+      confirmBtn.removeEventListener('click',onConfirm);
+      modal.removeEventListener('click',onBackdrop);
+      document.removeEventListener('keydown',onKey);
+      resolve(ok);
+    };
+    const onCancel=()=>close(false);
+    const onConfirm=()=>close(true);
+    const onBackdrop=(e)=>{if(e.target===modal)close(false);};
+    const onKey=(e)=>{if(e.key==='Escape')close(false);};
+
+    cancelBtn.addEventListener('click',onCancel);
+    confirmBtn.addEventListener('click',onConfirm);
+    modal.addEventListener('click',onBackdrop);
+    document.addEventListener('keydown',onKey);
+    confirmBtn.focus();
+  });
+}
+
 async function saveResult(mid,gd){
   if(!isGDLocked(gd)){toast('ยังไม่ถึง kickoff — ยังกรอกผลไม่ได้');return;}
   const s1=document.getElementById('ar1-'+mid)?.value??'';
   const s2=document.getElementById('ar2-'+mid)?.value??'';
   if(s1===''||s2==='')return toast('ใส่สกอร์ทั้งสองฝั่ง');
+
+  if(shouldWarnEarlyResult(mid)){
+    const ok=await confirmAdminEarlyResult(mid,s1,s2);
+    if(!ok)return;
+  }
+
   try{
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'result',match_id:mid,score1:+s1,score2:+s2})});
     const m=allMatches.find(x=>x.match_id===mid);if(m){m.score1=s1;m.score2=s2;}
