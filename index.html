@@ -262,6 +262,10 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .admin-waiting{opacity:.92}
 .admin-match-item.disabled{opacity:.62}
 .admin-match-item.disabled input{background:#f1f5f0!important;color:#94a3b8!important;border-color:#e2e8df!important}
+.admin-match-item.result-locked{opacity:.70}
+.admin-match-item.result-locked input{background:#f8faf7!important;color:#94a3b8!important;border-color:#e2e8df!important}
+.admin-result-lock-note{font-size:12px;color:#64748b;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:8px 10px;margin:10px 0;line-height:1.55}
+.btn-sm:disabled{opacity:.45;cursor:not-allowed;background:#94a3b8!important}
 
 
 /* ADMIN RESULT CONFIRM */
@@ -1502,20 +1506,26 @@ function renderAdmin(){
     const doneCount=ms.filter(m=>m.score1!==''&&m.score2!=='').length;
     const total=ms.length;
     const locked=isGDLocked(gd);
+    const resultLocked=isGDResultLocked(gd);
+    const canEditResult=locked&&!resultLocked;
     const isOpen=idx===visibleGDs.length-1; // เปิด GD ล่าสุดที่ visible ไว้ก่อน
     let badgeCls='ab-none', badgeTxt='⏳ รอ kickoff';
-    if(locked){
+    if(resultLocked){
+      badgeCls='ab-none';
+      badgeTxt='🔒 ล็อกผลแล้ว';
+    }else if(locked){
       badgeCls=doneCount===total?'ab-done':doneCount>0?'ab-partial':'ab-none';
       badgeTxt=doneCount===total?`✓ ครบ ${total} คู่`:doneCount>0?`${doneCount}/${total} คู่`:`พร้อมกรอกผล`;
     }
     const firstKick=gdFirstKick(gd);
+    const lastKick=gdLastKick(gd);
     const kickoffTxt=firstKick?`${String(firstKick.getDate()).padStart(2,'0')}/${String(firstKick.getMonth()+1).padStart(2,'0')} ${String(firstKick.getHours()).padStart(2,'0')}:${String(firstKick.getMinutes()).padStart(2,'0')}`:'';
     html+=`<div class="accordion ${locked?'':'admin-waiting'}" id="acc-${gd}">
       <div class="accordion-head" onclick="toggleAcc('${gd}')">
         <div class="accordion-head-left">
           <div>
             <div class="accordion-title">📋 GD${gd} · ${fmtDate(ms[0]?.gd_label||'')}</div>
-            <div class="accordion-sub">${locked?'กรอกผลจริง':'เปิดให้ทายแล้ว · รอ kickoff '+kickoffTxt}</div>
+            <div class="accordion-sub">${resultLocked?'ผลการแข่งขันของ GD นี้ถูกล็อกแล้ว':locked?'กรอกผลจริง':'เปิดให้ทายแล้ว · รอ kickoff '+kickoffTxt}</div>
           </div>
           <span class="accordion-badge ${badgeCls}" id="acc-badge-${gd}">${badgeTxt}</span>
         </div>
@@ -1524,16 +1534,18 @@ function renderAdmin(){
       <div class="accordion-body ${isOpen?'open':''}" id="acc-body-${gd}">`;
     if(!locked){
       html+=`<div style="font-size:12px;color:var(--warn);background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 10px;margin:10px 0">⏳ GD นี้เปิดให้ทายแล้ว แต่จะกรอกผลได้หลัง kickoff คู่แรก (${kickoffTxt})</div>`;
+    }else if(resultLocked){
+      html+=`<div class="admin-result-lock-note">🔒 ผลการแข่งขันของ GD นี้ถูกล็อกแล้ว หลังจากพ้น 24 ชั่วโมงจาก kickoff คู่สุดท้ายของ GD<br>หากจำเป็นต้องแก้ไข ให้แก้ผ่าน Google Sheets โดยตรง</div>`;
     }
     ms.forEach(m=>{
       const has=m.score1!==''&&m.score2!=='';
-      html+=`<div class="admin-match-item ${locked?'':'disabled'}">
+      html+=`<div class="admin-match-item ${canEditResult?'':resultLocked?'result-locked':'disabled'}">
         <div class="admin-match-name">${getFlag(m.team1)||''} ${m.team1} vs ${m.team2} ${getFlag(m.team2)||''} <span style="font-size:11px;color:var(--muted)">${m.time_th} น.</span></div>
         <div class="score-pair">
-          <input type="number" min="0" max="99" id="ar1-${m.match_id}" value="${m.score1}" placeholder="–" inputmode="numeric" ${locked?'':'disabled'}>
+          <input type="number" min="0" max="99" id="ar1-${m.match_id}" value="${m.score1}" placeholder="–" inputmode="numeric" ${canEditResult?'':'disabled'}>
           <span style="color:var(--muted);font-weight:700">–</span>
-          <input type="number" min="0" max="99" id="ar2-${m.match_id}" value="${m.score2}" placeholder="–" inputmode="numeric" ${locked?'':'disabled'}>
-          <button class="btn-sm" onclick="saveResult('${m.match_id}','${gd}')" ${locked?'':'disabled style="opacity:.45;cursor:not-allowed;background:#94a3b8"'}>${locked?'บันทึก':'รอ kickoff'}</button>
+          <input type="number" min="0" max="99" id="ar2-${m.match_id}" value="${m.score2}" placeholder="–" inputmode="numeric" ${canEditResult?'':'disabled'}>
+          <button class="btn-sm" onclick="saveResult('${m.match_id}','${gd}')" ${canEditResult?'':'disabled'}>${canEditResult?'บันทึก':resultLocked?'ล็อกแล้ว':'รอ kickoff'}</button>
           <span class="result-ok" id="adm-ok-${m.match_id}" style="display:${has?'inline':'none'}">${has?`✓ ${m.score1}–${m.score2}`:''}</span>
         </div>
       </div>`;
@@ -1595,6 +1607,13 @@ function shouldWarnEarlyResult(mid){
   if(!kick||Number.isNaN(kick.getTime()))return false;
   const warnUntil=new Date(kick.getTime()+2*60*60*1000);
   return new Date()<warnUntil;
+}
+
+function isGDResultLocked(gd){
+  const lastKick=gdLastKick(gd);
+  if(!lastKick||Number.isNaN(lastKick.getTime()))return false;
+  const lockAt=new Date(lastKick.getTime()+24*60*60*1000);
+  return new Date()>=lockAt;
 }
 
 function ensureAdminResultConfirmModal(){
@@ -1666,6 +1685,7 @@ function confirmAdminEarlyResult(mid,s1,s2){
 
 async function saveResult(mid,gd){
   if(!isGDLocked(gd)){toast('ยังไม่ถึง kickoff — ยังกรอกผลไม่ได้');return;}
+  if(isGDResultLocked(gd)){toast('ผลของ GD นี้ถูกล็อกแล้ว');renderAdmin();return;}
   const s1=document.getElementById('ar1-'+mid)?.value??'';
   const s2=document.getElementById('ar2-'+mid)?.value??'';
   if(s1===''||s2==='')return toast('ใส่สกอร์ทั้งสองฝั่ง');
