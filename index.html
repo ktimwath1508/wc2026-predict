@@ -8,6 +8,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function(){
+  try{
+    const t=localStorage.getItem('wc2026_theme')||'classic';
+    document.documentElement.setAttribute('data-theme',t);
+  }catch(e){
+    document.documentElement.setAttribute('data-theme','classic');
+  }
+})();
+</script>
 <style>
 :root{
   --pitch:#0b3d2e;--pitch2:#0f5138;--line:rgba(255,255,255,.14);
@@ -362,6 +372,212 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .save-status.saving{color:var(--warn)}
 .save-status.saved{color:var(--good)}
 .save-status.error{color:var(--bad)}
+
+/* THEME SYSTEM */
+:root{
+  --field-bg:#f8faf7;
+  --soft-card:#f8faf7;
+  --border:#eaefe8;
+  --border-strong:#d8e0d6;
+  --table-line:#eef1ed;
+  --input-bg:#ffffff;
+  --modal-bg:#ffffff;
+  --nav-bg:#ffffff;
+  --hero-glow:transparent;
+}
+html[data-theme="night"]{
+  --pitch:#06120e;--pitch2:#102f25;--line:rgba(78,233,157,.20);
+  --gold:#d6a84a;--gold-soft:#f8dc83;
+  --ink:#f4fbf7;--paper:#07110d;--card:#10201b;
+  --muted:#a8b8af;--good:#39e98d;--bad:#ff6b6b;--warn:#f4b84a;
+  --shadow:0 10px 28px rgba(0,0,0,.35);--shadow-sm:0 4px 16px rgba(0,0,0,.28);
+  --field-bg:#0b1914;--soft-card:#13271f;--border:#244237;--border-strong:#376050;
+  --table-line:#223d33;--input-bg:#0c1814;--modal-bg:#0e1f19;--nav-bg:#0b1713;
+  --hero-glow:radial-gradient(80% 100% at 75% 10%,rgba(57,233,141,.20),transparent 55%);
+}
+html[data-theme="neon"]{
+  --pitch:#020806;--pitch2:#071b17;--line:rgba(255,255,255,.15);
+  --gold:#f5c542;--gold-soft:#ffe58a;
+  --ink:#f8fffb;--paper:#040908;--card:#0d1916;
+  --muted:#a8b8b0;--good:#25e884;--bad:#ff5a66;--warn:#f3b33d;
+  --shadow:0 12px 34px rgba(0,0,0,.42);--shadow-sm:0 5px 18px rgba(0,0,0,.32);
+  --field-bg:#081310;--soft-card:#101f1b;--border:#1f3b33;--border-strong:#31594b;
+  --table-line:#223c34;--input-bg:#0b1714;--modal-bg:#0b1714;--nav-bg:#050d0b;
+  --hero-glow:
+    radial-gradient(65% 80% at 20% 18%,rgba(0,117,255,.18),transparent 48%),
+    radial-gradient(70% 80% at 85% 12%,rgba(255,38,62,.16),transparent 50%),
+    radial-gradient(80% 90% at 55% 35%,rgba(57,233,141,.16),transparent 58%);
+}
+html[data-theme="night"] body,
+html[data-theme="neon"] body,
+html[data-theme="night"] #app,
+html[data-theme="neon"] #app{background:var(--paper);color:var(--ink)}
+html[data-theme="night"] .hero,
+html[data-theme="neon"] .hero,
+html[data-theme="night"] .login-hero,
+html[data-theme="neon"] .login-hero{
+  background:var(--hero-glow),repeating-linear-gradient(90deg,transparent 0 38px,rgba(255,255,255,.025) 38px 76px),
+  radial-gradient(130% 90% at 80% -10%,var(--pitch2),var(--pitch));
+}
+html[data-theme="neon"] .hero::before,
+html[data-theme="neon"] .login-hero::before{
+  display:block;content:"";position:absolute;inset:-20%;
+  background:
+    linear-gradient(115deg,transparent 12%,rgba(0,117,255,.11) 13%,transparent 15%),
+    linear-gradient(145deg,transparent 30%,rgba(255,38,62,.10) 31%,transparent 33%),
+    linear-gradient(70deg,transparent 58%,rgba(57,233,141,.11) 59%,transparent 61%);
+  filter:blur(.2px);opacity:.9;pointer-events:none;
+}
+html[data-theme="night"] .nav,
+html[data-theme="neon"] .nav{background:rgba(5,13,11,.96);border-top-color:var(--border);backdrop-filter:blur(10px)}
+html[data-theme="night"] .nav-btn,
+html[data-theme="neon"] .nav-btn{color:#7f938a}
+html[data-theme="night"] .nav-btn.active,
+html[data-theme="neon"] .nav-btn.active{color:var(--good)}
+html[data-theme="night"] .match-card,
+html[data-theme="night"] .lb,
+html[data-theme="night"] .bonus-board-wrap,
+html[data-theme="night"] .chart-card,
+html[data-theme="night"] .insight-card,
+html[data-theme="night"] .analytics-summary-card,
+html[data-theme="night"] .admin-card,
+html[data-theme="night"] .accordion,
+html[data-theme="neon"] .match-card,
+html[data-theme="neon"] .lb,
+html[data-theme="neon"] .bonus-board-wrap,
+html[data-theme="neon"] .chart-card,
+html[data-theme="neon"] .insight-card,
+html[data-theme="neon"] .analytics-summary-card,
+html[data-theme="neon"] .admin-card,
+html[data-theme="neon"] .accordion{
+  background:var(--card);border-color:var(--border);color:var(--ink);
+}
+html[data-theme="neon"] .match-card,
+html[data-theme="neon"] .chart-card,
+html[data-theme="neon"] .admin-card,
+html[data-theme="neon"] .accordion{
+  box-shadow:0 0 0 1px rgba(57,233,141,.06),0 10px 26px rgba(0,0,0,.34);
+}
+html[data-theme="night"] .chip,
+html[data-theme="neon"] .chip,
+html[data-theme="night"] .lb-pick,
+html[data-theme="night"] .outcome-item,
+html[data-theme="night"] .freq-item,
+html[data-theme="night"] .rules-note,
+html[data-theme="night"] .deadline-info,
+html[data-theme="night"] .bonus-confirm-note,
+html[data-theme="night"] .bonus-view-row,
+html[data-theme="night"] .view-grid td.player-cell,
+html[data-theme="neon"] .lb-pick,
+html[data-theme="neon"] .outcome-item,
+html[data-theme="neon"] .freq-item,
+html[data-theme="neon"] .rules-note,
+html[data-theme="neon"] .deadline-info,
+html[data-theme="neon"] .bonus-confirm-note,
+html[data-theme="neon"] .bonus-view-row,
+html[data-theme="neon"] .view-grid td.player-cell{
+  background:var(--soft-card);border-color:var(--border);color:var(--ink);
+}
+html[data-theme="night"] .chip,
+html[data-theme="neon"] .chip{background:var(--card);color:var(--muted)}
+html[data-theme="night"] .chip.on,
+html[data-theme="neon"] .chip.on{background:var(--gold);color:#07110d;border-color:var(--gold)}
+html[data-theme="night"] input,
+html[data-theme="night"] select,
+html[data-theme="night"] .score-input,
+html[data-theme="night"] .bonus-input,
+html[data-theme="night"] .admin-input,
+html[data-theme="night"] .score-pair input,
+html[data-theme="neon"] input,
+html[data-theme="neon"] select,
+html[data-theme="neon"] .score-input,
+html[data-theme="neon"] .bonus-input,
+html[data-theme="neon"] .admin-input,
+html[data-theme="neon"] .score-pair input{
+  background:var(--input-bg);color:var(--ink);border-color:var(--border-strong);
+}
+html[data-theme="night"] .score-input:disabled,
+html[data-theme="neon"] .score-input:disabled,
+html[data-theme="night"] .bonus-input:disabled,
+html[data-theme="neon"] .bonus-input:disabled{
+  background:#10201b;color:#789085;border-color:#274237;
+}
+html[data-theme="night"] .score-input.dirty,
+html[data-theme="neon"] .score-input.dirty{background:#2a1d0b;border-color:var(--warn)}
+html[data-theme="night"] .rules-sheet,
+html[data-theme="night"] .admin-result-dialog,
+html[data-theme="night"] .champ-dd,
+html[data-theme="neon"] .rules-sheet,
+html[data-theme="neon"] .admin-result-dialog,
+html[data-theme="neon"] .champ-dd{
+  background:var(--modal-bg);color:var(--ink);border-color:var(--border);
+}
+html[data-theme="night"] .view-grid td,
+html[data-theme="neon"] .view-grid td{border-color:var(--table-line);color:var(--ink)}
+html[data-theme="night"] .view-grid tr:hover td,
+html[data-theme="night"] .view-grid tr:hover td.player-cell,
+html[data-theme="neon"] .view-grid tr:hover td,
+html[data-theme="neon"] .view-grid tr:hover td.player-cell{background:#13271f}
+html[data-theme="night"] .accordion-head:hover,
+html[data-theme="neon"] .accordion-head:hover{background:var(--soft-card)}
+html[data-theme="night"] .lb-row,
+html[data-theme="neon"] .lb-row{border-bottom-color:var(--border)}
+html[data-theme="night"] .lb-row.me,
+html[data-theme="neon"] .lb-row.me{background:rgba(245,197,66,.08)}
+html[data-theme="night"] .bonus-inline,
+html[data-theme="neon"] .bonus-inline{
+  background:linear-gradient(135deg,rgba(245,197,66,.11),rgba(57,233,141,.05));border-color:rgba(245,197,66,.55);
+}
+html[data-theme="night"] .bonus-inline.saved,
+html[data-theme="neon"] .bonus-inline.saved{background:linear-gradient(135deg,rgba(57,233,141,.10),rgba(245,197,66,.06));border-color:rgba(57,233,141,.55)}
+html[data-theme="night"] .chart-card h3,
+html[data-theme="night"] .analytics-summary-title,
+html[data-theme="night"] .rules-section h4,
+html[data-theme="night"] .form-row label,
+html[data-theme="night"] .bonus-label,
+html[data-theme="night"] .rules-head h3,
+html[data-theme="neon"] .chart-card h3,
+html[data-theme="neon"] .analytics-summary-title,
+html[data-theme="neon"] .rules-section h4,
+html[data-theme="neon"] .form-row label,
+html[data-theme="neon"] .bonus-label,
+html[data-theme="neon"] .rules-head h3{color:var(--good)}
+html[data-theme="night"] .lb-pts,
+html[data-theme="night"] .insight-val,
+html[data-theme="night"] .outcome-total,
+html[data-theme="night"] .tournament-progress-num,
+html[data-theme="neon"] .lb-pts,
+html[data-theme="neon"] .insight-val,
+html[data-theme="neon"] .outcome-total,
+html[data-theme="neon"] .tournament-progress-num{color:var(--good)}
+html[data-theme="night"] .c3,
+html[data-theme="neon"] .c3{background:rgba(245,197,66,.20);color:#ffe08a}
+html[data-theme="night"] .c1,
+html[data-theme="neon"] .c1{background:rgba(57,233,141,.14);color:var(--good)}
+html[data-theme="night"] .c0,
+html[data-theme="neon"] .c0{background:rgba(255,255,255,.05);color:#75867e}
+html[data-theme="night"] .b-wrong,
+html[data-theme="neon"] .b-wrong{background:#17231f;color:#8fa299}
+html[data-theme="night"] .toast,
+html[data-theme="neon"] .toast{background:#e8fff3;color:#06120e}
+html[data-theme="neon"] .hero-link.theme-trigger{border-color:rgba(57,233,141,.45);box-shadow:0 0 14px rgba(57,233,141,.12)}
+.theme-modal{position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:1100;display:none;align-items:flex-end;justify-content:center;padding:16px}
+.theme-modal.open{display:flex}
+.theme-sheet{width:100%;max-width:520px;background:var(--modal-bg);color:var(--ink);border-radius:18px 18px 14px 14px;box-shadow:0 18px 60px rgba(0,0,0,.35);padding:16px;border:1px solid var(--border)}
+.theme-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.theme-head h3{font-family:var(--display);font-size:17px;font-weight:800;color:var(--pitch);margin:0}
+html[data-theme="night"] .theme-head h3,
+html[data-theme="neon"] .theme-head h3{color:var(--good)}
+.theme-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--soft-card);color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
+.theme-options{display:grid;gap:8px}
+.theme-option{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:1.5px solid var(--border-strong);background:var(--input-bg);color:var(--ink);border-radius:12px;padding:11px 12px;text-align:left;font-family:var(--thai);cursor:pointer}
+.theme-option strong{font-family:var(--display);font-size:13.5px}
+.theme-option span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.theme-option .theme-check{width:21px;height:21px;border-radius:50%;border:2px solid var(--border-strong);display:grid;place-items:center;font-size:12px;color:transparent;flex-shrink:0}
+.theme-option.active{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,197,24,.12)}
+.theme-option.active .theme-check{background:var(--gold);border-color:var(--gold);color:#07110d}
+.theme-note{font-size:11px;color:var(--muted);line-height:1.55;margin-top:10px;background:var(--soft-card);border:1px solid var(--border);border-radius:10px;padding:9px 10px}
+
 </style>
 </head>
 <body>
@@ -446,6 +662,27 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
       <a class="hero-link" href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings" target="_blank" rel="noopener noreferrer">🏆 Standings</a>
       <a class="hero-link" href="https://www.espn.co.uk/football/stats/_/league/fifa.world" target="_blank" rel="noopener noreferrer">⚽ Top Scorers</a>
       <button type="button" class="hero-link rules" onclick="openRulesModal()">📖 Rules / FAQ</button>
+      <button type="button" class="hero-link theme-trigger" onclick="openThemeModal()" aria-label="Theme settings">⚙️</button>
+    </div>
+  </div>
+  <div id="theme-modal" class="theme-modal" onclick="if(event.target===this)closeThemeModal()">
+    <div class="theme-sheet" role="dialog" aria-modal="true" aria-labelledby="theme-title">
+      <div class="theme-head">
+        <h3 id="theme-title">⚙️ Settings</h3>
+        <button type="button" class="theme-close" onclick="closeThemeModal()" aria-label="Close">×</button>
+      </div>
+      <div class="theme-options">
+        <button type="button" class="theme-option" data-theme-choice="classic" onclick="selectTheme('classic')">
+          <div><strong>Classic</strong><span>โทนสว่างแบบเดิม อ่านง่ายสุด</span></div><div class="theme-check">✓</div>
+        </button>
+        <button type="button" class="theme-option" data-theme-choice="night" onclick="selectTheme('night')">
+          <div><strong>Night Stadium</strong><span>โทนสนามกลางคืน ดำเขียว ถนอมตา</span></div><div class="theme-check">✓</div>
+        </button>
+        <button type="button" class="theme-option" data-theme-choice="neon" onclick="selectTheme('neon')">
+          <div><strong>FIFA 2026 Neon</strong><span>ดำ + Neon เขียว/แดง/น้ำเงินแบบบอลโลก</span></div><div class="theme-check">✓</div>
+        </button>
+      </div>
+      <div class="theme-note">Theme จะเปลี่ยนทุกหน้าในแอป และจำค่าบนอุปกรณ์นี้อัตโนมัติ</div>
     </div>
   </div>
   <div id="rules-modal" class="rules-modal" onclick="if(event.target===this)closeRulesModal()">
@@ -751,6 +988,36 @@ function getBonusStatus(){
   return 'frozen';
 }
 
+
+function bonusBaselineKey(){return `wc2026_bonus_r2_base_${user||'guest'}`;}
+function getR2BonusBaseline(pl){
+  const fallback={champ:pl?.champ||origChamp||'',scorer:pl?.scorer||origScorer||'',penalty:pl?.bonus_penalty||0};
+  try{
+    const raw=localStorage.getItem(bonusBaselineKey());
+    if(raw){
+      const b=JSON.parse(raw);
+      if(b&&typeof b==='object'&&('champ'in b||'scorer'in b)){
+        return {champ:b.champ||'',scorer:b.scorer||'',penalty:parseInt(b.penalty||'0')||0};
+      }
+    }
+    localStorage.setItem(bonusBaselineKey(),JSON.stringify(fallback));
+  }catch(e){}
+  return fallback;
+}
+function getBonusCompareBase(pl,status=getBonusStatus()){
+  if(status==='r2')return getR2BonusBaseline(pl||allPlayers.find(p=>p.name===user)||{});
+  return {champ:origChamp||'',scorer:origScorer||'',penalty:(pl?.bonus_penalty||0)};
+}
+function getBonusPenaltyPreview(champ,scorer,pl,status=getBonusStatus()){
+  const base=getBonusCompareBase(pl,status);
+  let changeCount=0;
+  if(status==='r2'){
+    if((champ||'')!== (base.champ||''))changeCount++;
+    if((scorer||'')!== (base.scorer||''))changeCount++;
+  }
+  return {base,changeCount,penalty:(base.penalty||0)+(changeCount*5)};
+}
+
 // ── PREDICT TAB ────────────────────────────────────────────────
 function draftKey(gd){return `wc2026_draft_${user||'guest'}_GD${gd}`;}
 function getPredictionDraft(gd){
@@ -864,14 +1131,14 @@ function renderPredict(){
       </div>
       <div class="bonus-confirm-note">
         เมื่อกดบันทึก ระบบจะให้ยืนยันก่อนส่งข้อมูล<br>
-        ${bonusStatus==='r2'?'ช่วงนี้หากเปลี่ยนคำตอบจากเดิม จะหัก 5 แต้ม/รายการ แต่ถ้าเลือกเหมือนเดิมจะไม่หักคะแนน':'ก่อน kickoff GD1 สามารถแก้ได้ฟรี' }
+        ${bonusStatus==='r2'?'ช่วงนี้หากคำตอบสุดท้ายต่างจากคำทายเดิมก่อนเปิดรอบแก้ไข จะหัก 5 แต้ม/รายการ แต่ไม่หักซ้ำจากการกด Save หลายรอบ':'ก่อน kickoff GD1 สามารถแก้ได้ฟรี' }
       </div>
     </div>
 
     <div class="deadline-info">
       🔓 ก่อน GD1 kickoff (${fmtDeadline('1')||'–'}): แก้ได้ฟรี<br>
       ⏸ หลัง GD1 kickoff ถึงจบ Group Stage: ปิดแก้ชั่วคราว<br>
-      ⚠️ หลัง Group Stage จบ ถึงก่อน R32 คู่แรก: แก้ได้ แต่หัก <b>−5 แต้ม</b>/รายการที่เปลี่ยน<br>
+      ⚠️ หลัง Group Stage จบ ถึงก่อน R32 คู่แรก: แก้ได้ โดยหัก <b>−5 แต้ม</b>/หัวข้อที่คำตอบสุดท้ายเปลี่ยนจากเดิม<br>
       🔒 หลัง R32 คู่แรก kickoff: ปิดถาวร
     </div>
   </div>`;
@@ -1005,7 +1272,8 @@ function initBonusInline(status,pl){
   const scorerInp=document.getElementById('b-scorer-inp');
   scorerInp?.addEventListener('input',()=>{
     const pen=document.getElementById('b-scorer-pen');
-    if(pen)pen.style.display=(status==='r2'&&scorerInp.value.trim()!==origScorer)?'block':'none';
+    const base=getBonusCompareBase(pl,status);
+    if(pen)pen.style.display=(status==='r2'&&scorerInp.value.trim()!==base.scorer)?'block':'none';
   });
   document.getElementById('btn-save-bonus')?.addEventListener('click',saveBonus);
 }
@@ -1016,7 +1284,9 @@ function selectChamp(name){
   const dd=document.getElementById('b-champ-dd'); if(dd)dd.style.display='none';
   const s=document.getElementById('b-champ-show');if(s){s.innerHTML=flagImg(name,20)+' '+name;s.style.display='block';}
   const pen=document.getElementById('b-champ-pen');
-  if(pen)pen.style.display=(getBonusStatus()==='r2'&&name!==origChamp)?'block':'none';
+  const pl=allPlayers.find(p=>p.name===user)||{};
+  const base=getBonusCompareBase(pl,getBonusStatus());
+  if(pen)pen.style.display=(getBonusStatus()==='r2'&&name!==base.champ)?'block':'none';
 }
 async function saveBonus(){
   const status=getBonusStatus();
@@ -1025,15 +1295,22 @@ async function saveBonus(){
   const scorer=document.getElementById('b-scorer-inp')?.value.trim()||'';
   const pl=allPlayers.find(p=>p.name===user)||{};
   const oldPenalty=pl.bonus_penalty||0;
-  let penalty=oldPenalty;
-  let changeCount=0;
+  const preview=getBonusPenaltyPreview(champ,scorer,pl,status);
+  const penalty=preview.penalty;
+  const changeCount=preview.changeCount;
+  const base=preview.base;
+
+  let msg;
   if(status==='r2'){
-    if(champ&&champ!==origChamp){penalty+=5;changeCount++;}
-    if(scorer&&scorer!==origScorer){penalty+=5;changeCount++;}
+    const lines=[];
+    if((champ||'')!==(base.champ||''))lines.push(`🏆 ทีมแชมป์: ${base.champ||'-'} → ${champ||'-'} (-5)`);
+    if((scorer||'')!==(base.scorer||''))lines.push(`⚽ ดาวซัลโว: ${base.scorer||'-'} → ${scorer||'-'} (-5)`);
+    msg=changeCount>0
+      ? `ยืนยันการแก้ Bonus?\n\n${lines.join('\n')}\n\nรวมที่จะถูกหัก ${changeCount*5} แต้ม\n(คิดจากคำทายเดิมก่อนเปิดรอบแก้ไข ไม่หักซ้ำจากการกด Save หลายรอบ)`
+      : 'ยืนยันการบันทึก Bonus?\nคำตอบเหมือนเดิม ไม่หักคะแนน';
+  }else{
+    msg='ยืนยันการบันทึก Bonus? ก่อน GD1 kickoff ยังสามารถกลับมาแก้ได้ฟรี';
   }
-  const msg=status==='r2'
-    ? (changeCount>0?`ยืนยันการแก้ Bonus? ระบบจะหัก ${changeCount*5} แต้ม (${changeCount} รายการที่เปลี่ยนจากเดิม)`:'ยืนยันการบันทึก Bonus? คำตอบเหมือนเดิม ไม่หักคะแนน')
-    : 'ยืนยันการบันทึก Bonus? ก่อน GD1 kickoff ยังสามารถกลับมาแก้ได้ฟรี';
   if(!confirm(msg))return;
 
   const btn=document.getElementById('btn-save-bonus');
@@ -1044,7 +1321,7 @@ async function saveBonus(){
     origChamp=champ;origScorer=scorer;champSelected=champ;
     const idx=allPlayers.findIndex(p=>p.name===user);
     if(idx>=0){allPlayers[idx].champ=champ;allPlayers[idx].scorer=scorer;allPlayers[idx].bonus_penalty=penalty;}
-    toast(status==='r2'?`บันทึกแล้ว${changeCount?` หัก ${penalty-oldPenalty} แต้ม`: ' ไม่หักคะแนน'} ✓`:'บันทึก Bonus แล้ว ✓');
+    toast(status==='r2'?`บันทึกแล้ว${changeCount?` หักรวม ${penalty-(base.penalty||0)} แต้ม`: ' ไม่หักคะแนน'} ✓`:'บันทึก Bonus แล้ว ✓');
     renderPredict();
   }catch(e){if(btn){btn.textContent='บันทึก';btn.disabled=false;}toast('เกิดข้อผิดพลาด');}
 }
@@ -1872,6 +2149,7 @@ document.getElementById('inp-pin').addEventListener('keydown',e=>{if(e.key==='En
 document.getElementById('inp-pin-confirm').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-set-pin').click();});
 
 async function loginSuccess(name,pl){
+  applyTheme(getCurrentTheme());
   user=name;
   origChamp=pl?.champ||'';origScorer=pl?.scorer||'';champSelected=pl?.champ||'';
   document.getElementById('screen-login').classList.remove('active');
@@ -1915,6 +2193,40 @@ function updateCountdown(){
   if(document.getElementById('tab-admin')?.classList.contains('active')){
     renderAdmin();
   }
+}
+
+
+function getCurrentTheme(){
+  try{return localStorage.getItem('wc2026_theme')||document.documentElement.getAttribute('data-theme')||'classic';}
+  catch(e){return 'classic';}
+}
+function applyTheme(theme){
+  const t=['classic','night','neon'].includes(theme)?theme:'classic';
+  document.documentElement.setAttribute('data-theme',t);
+  try{localStorage.setItem('wc2026_theme',t);}catch(e){}
+  updateThemeUI();
+  if(typeof renderAnalytics==='function'&&document.getElementById('tab-analytics')?.classList.contains('active')){
+    setTimeout(renderAnalytics,0);
+  }
+}
+function updateThemeUI(){
+  const t=getCurrentTheme();
+  document.querySelectorAll('[data-theme-choice]').forEach(btn=>{
+    btn.classList.toggle('active',btn.getAttribute('data-theme-choice')===t);
+  });
+}
+function openThemeModal(){
+  updateThemeUI();
+  const m=document.getElementById('theme-modal');
+  if(m)m.classList.add('open');
+}
+function closeThemeModal(){
+  const m=document.getElementById('theme-modal');
+  if(m)m.classList.remove('open');
+}
+function selectTheme(theme){
+  applyTheme(theme);
+  toast(theme==='classic'?'ใช้ Theme Classic แล้ว':theme==='night'?'ใช้ Theme Night Stadium แล้ว':'ใช้ Theme FIFA 2026 Neon แล้ว');
 }
 
 function openRulesModal(){
