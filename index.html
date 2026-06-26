@@ -11,7 +11,8 @@
 <script>
 (function(){
   try{
-    const t=localStorage.getItem('wc2026_theme')||'classic';
+    let t=localStorage.getItem('wc2026_theme')||'classic';
+    if(t==='night')t='neon';
     document.documentElement.setAttribute('data-theme',t);
   }catch(e){
     document.documentElement.setAttribute('data-theme','classic');
@@ -578,6 +579,113 @@ html[data-theme="neon"] .theme-head h3{color:var(--good)}
 .theme-option.active .theme-check{background:var(--gold);border-color:var(--gold);color:#07110d}
 .theme-note{font-size:11px;color:var(--muted);line-height:1.55;margin-top:10px;background:var(--soft-card);border:1px solid var(--border);border-radius:10px;padding:9px 10px}
 
+
+/* NEON STADIUM REWORK v2 */
+html[data-theme="neon"]{
+  --pitch:#00f5a0;--pitch2:#081f1a;--line:rgba(0,245,160,.20);
+  --gold:#f5c542;--gold-soft:#ffe58a;
+  --ink:#f4fff9;--paper:#020807;--card:#0b1915;
+  --muted:#a7bbb3;--good:#20f58e;--bad:#ff6370;--warn:#f5b642;
+  --shadow:0 18px 46px rgba(0,0,0,.52);--shadow-sm:0 8px 24px rgba(0,0,0,.36);
+  --field-bg:#0f201b;--soft-card:#10231e;--border:rgba(0,245,160,.22);--border-strong:rgba(0,245,160,.38);
+  --table-line:rgba(0,245,160,.16);--input-bg:#0c1915;--modal-bg:#081713;--nav-bg:#050d0b;
+  --hero-glow:
+    radial-gradient(70% 80% at 18% 15%,rgba(0,194,255,.20),transparent 52%),
+    radial-gradient(70% 80% at 84% 12%,rgba(255,38,62,.15),transparent 55%),
+    radial-gradient(80% 90% at 55% 32%,rgba(0,245,160,.18),transparent 62%);
+}
+html[data-theme="neon"] .hero,
+html[data-theme="neon"] .login-hero{
+  background:var(--hero-glow),linear-gradient(135deg,#03100d 0%,#061b18 45%,#020807 100%)!important;
+}
+html[data-theme="neon"] .match-card,
+html[data-theme="neon"] .lb,
+html[data-theme="neon"] .bonus-board-wrap,
+html[data-theme="neon"] .chart-card,
+html[data-theme="neon"] .analytics-summary-card,
+html[data-theme="neon"] .admin-card,
+html[data-theme="neon"] .accordion,
+html[data-theme="neon"] .insight-card{
+  background:linear-gradient(180deg,rgba(16,35,30,.98),rgba(8,22,18,.98))!important;
+  border-color:rgba(0,245,160,.22)!important;
+  box-shadow:0 0 0 1px rgba(0,245,160,.05),0 16px 36px rgba(0,0,0,.42),0 0 26px rgba(0,245,160,.08)!important;
+  color:var(--ink)!important;
+}
+html[data-theme="neon"] .chart-card h3,
+html[data-theme="neon"] .analytics-summary-title,
+html[data-theme="neon"] .sec-head h2,
+html[data-theme="neon"] .accordion-title,
+html[data-theme="neon"] .admin-card h3,
+html[data-theme="neon"] .lb-name,
+html[data-theme="neon"] .team-name,
+html[data-theme="neon"] .freq-score{
+  color:#f4fff9!important;
+  text-shadow:0 0 10px rgba(0,245,160,.18);
+}
+html[data-theme="neon"] .chart-card h3,
+html[data-theme="neon"] .analytics-summary-title{color:#20f58e!important}
+html[data-theme="neon"] .sec-head p,
+html[data-theme="neon"] .match-time,
+html[data-theme="neon"] .lb-sub,
+html[data-theme="neon"] .analytics-summary-foot,
+html[data-theme="neon"] .quadrant-note,
+html[data-theme="neon"] .real-score{color:#a7bbb3!important}
+html[data-theme="neon"] .freq-item,
+html[data-theme="neon"] .outcome-item,
+html[data-theme="neon"] .lb-pick,
+html[data-theme="neon"] .bonus-view-row,
+html[data-theme="neon"] .rules-note,
+html[data-theme="neon"] .deadline-info,
+html[data-theme="neon"] .bonus-confirm-note{
+  background:rgba(255,255,255,.045)!important;
+  border:1px solid rgba(0,245,160,.12)!important;
+  color:#f4fff9!important;
+}
+html[data-theme="neon"] .freq-pct,
+html[data-theme="neon"] .outcome-count,
+html[data-theme="neon"] .lb-pts,
+html[data-theme="neon"] .insight-val,
+html[data-theme="neon"] .tournament-progress-num,
+html[data-theme="neon"] .outcome-total{
+  color:#20f58e!important;
+  text-shadow:0 0 12px rgba(32,245,142,.22);
+}
+html[data-theme="neon"] .lb-pts span,
+html[data-theme="neon"] .outcome-count span,
+html[data-theme="neon"] .tournament-progress-num span{color:#c7d7d0!important;text-shadow:none}
+html[data-theme="neon"] .progress-track,
+html[data-theme="neon"] #champ-trend div[style*="background:#e8f0e6"],
+html[data-theme="neon"] #scorer-trend div[style*="background:#e8f0e6"]{
+  background:#193029!important;
+  box-shadow:inset 0 0 0 1px rgba(0,245,160,.12)!important;
+}
+html[data-theme="neon"] .progress-fill,
+html[data-theme="neon"] #champ-trend div[style*="height:100%"],
+html[data-theme="neon"] #scorer-trend div[style*="height:100%"]{
+  background:linear-gradient(90deg,#00f5a0,#00c2ff)!important;
+  box-shadow:0 0 12px rgba(0,245,160,.45)!important;
+}
+html[data-theme="neon"] .btn-submit,
+html[data-theme="neon"] .btn-primary,
+html[data-theme="neon"] .btn-sm,
+html[data-theme="neon"] .btn-bonus-save{
+  background:linear-gradient(135deg,#00f5a0,#00c2ff)!important;
+  color:#03100c!important;
+  box-shadow:0 0 20px rgba(0,245,160,.18)!important;
+}
+html[data-theme="neon"] .view-grid th{background:#07221c!important;color:#effff8!important;border-color:rgba(0,245,160,.20)!important}
+html[data-theme="neon"] .view-grid td{background:#091713!important;color:#f4fff9!important;border-color:rgba(0,245,160,.12)!important}
+html[data-theme="neon"] .view-grid td.player-cell{background:#0d211c!important;color:#f4fff9!important}
+html[data-theme="neon"] .c3{background:rgba(245,197,66,.22)!important;color:#ffe58a!important}
+html[data-theme="neon"] .c1{background:rgba(0,245,160,.16)!important;color:#20f58e!important}
+html[data-theme="neon"] .c0{background:rgba(255,255,255,.035)!important;color:#7f948b!important}
+html[data-theme="neon"] .theme-option.active{border-color:#00f5a0!important;box-shadow:0 0 0 3px rgba(0,245,160,.14)!important}
+html[data-theme="neon"] .theme-option.active .theme-check{background:#00f5a0!important;border-color:#00f5a0!important;color:#03100c!important}
+.quadrant-note{font-size:11px;color:var(--muted);line-height:1.45;margin:-5px 0 8px}
+.quadrant-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:10.5px;color:var(--muted)}
+.quadrant-legend span{display:inline-flex;align-items:center;gap:5px;background:var(--soft-card);border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-weight:700}
+.q-dot{width:9px;height:9px;border-radius:50%;display:inline-block}.q-sweet{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.55)}.q-trap{background:#f59e0b}.q-hidden{background:#38bdf8}.q-rare{background:#94a3b8}
+
 </style>
 </head>
 <body>
@@ -675,11 +783,8 @@ html[data-theme="neon"] .theme-head h3{color:var(--good)}
         <button type="button" class="theme-option" data-theme-choice="classic" onclick="selectTheme('classic')">
           <div><strong>Classic</strong><span>โทนสว่างแบบเดิม อ่านง่ายสุด</span></div><div class="theme-check">✓</div>
         </button>
-        <button type="button" class="theme-option" data-theme-choice="night" onclick="selectTheme('night')">
-          <div><strong>Night Stadium</strong><span>โทนสนามกลางคืน ดำเขียว ถนอมตา</span></div><div class="theme-check">✓</div>
-        </button>
         <button type="button" class="theme-option" data-theme-choice="neon" onclick="selectTheme('neon')">
-          <div><strong>FIFA 2026 Neon</strong><span>ดำ + Neon เขียว/แดง/น้ำเงินแบบบอลโลก</span></div><div class="theme-check">✓</div>
+          <div><strong>Neon Stadium</strong><span>โทนสนามกลางคืน + LED เขียว/ฟ้า อ่านง่ายกว่าเดิม</span></div><div class="theme-check">✓</div>
         </button>
       </div>
       <div class="theme-note">Theme จะเปลี่ยนทุกหน้าในแอป และจำค่าบนอุปกรณ์นี้อัตโนมัติ</div>
@@ -799,6 +904,17 @@ html[data-theme="neon"] .theme-head h3{color:var(--good)}
       <div class="chart-card"><h3>📈 Cumulative Score</h3><div class="chart-wrap-tall"><canvas id="chart-line"></canvas></div></div>
       <div class="chart-card"><h3>🏅 Rank Movement</h3><div class="chart-wrap-tall"><canvas id="chart-rank"></canvas></div></div>
       <div class="chart-card"><h3>📊 Exact / Correct / Wrong (%)</h3><div class="chart-wrap"><canvas id="chart-stack"></canvas></div></div>
+      <div class="chart-card score-intel-card">
+        <h3>🧠 Score Intelligence Quadrant</h3>
+        <div class="quadrant-note">แกน X = สกอร์ที่เกิดจริงบ่อย · แกน Y = สกอร์ที่ทายเป๊ะบ่อย · ตัดด้วย Median</div>
+        <div class="chart-wrap-tall"><canvas id="chart-quadrant"></canvas></div>
+        <div class="quadrant-legend">
+          <span><i class="q-dot q-sweet"></i> Sweet Spot</span>
+          <span><i class="q-dot q-trap"></i> Trap Score</span>
+          <span><i class="q-dot q-hidden"></i> Hidden Gem</span>
+          <span><i class="q-dot q-rare"></i> Rare</span>
+        </div>
+      </div>
       <div class="chart-card"><h3>🎯 สกอร์จริงที่เกิดบ่อยสุด</h3><div id="freq-real" class="freq-grid"></div></div>
       <div class="chart-card"><h3>⭐ สกอร์ที่ทายเป๊ะบ่อยสุด</h3><div id="freq-exact" class="freq-grid"></div></div>
       <div class="chart-card"><h3>🔥 สกอร์ที่เพื่อนทายเยอะสุด</h3><div id="freq-popular" class="freq-grid"></div></div>
@@ -843,7 +959,7 @@ function getOpenHoursBeforeKickoff(kickoff){
 const csvURL=s=>`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(s)}&t=${Date.now()}`;
 let user=null,allMatches=[],allPreds=[],allPlayers=[],settings={};
 let champSelected='',origChamp='',origScorer='',admChampSelected='';
-let chartLine=null,chartStack=null,chartRank=null,chartOutcome=null,curViewGD=null,curPredictGD=null;
+let chartLine=null,chartStack=null,chartRank=null,chartOutcome=null,chartQuadrant=null,curViewGD=null,curPredictGD=null;
 
 // ผู้เล่นที่ยังให้ Login ได้ตามเดิม แต่ซ่อนออกจากหน้าการแข่งขัน / Dashboard / ผลทาย
 const EXCLUDED_FROM_GAME=['Dee+','Light','Neung','Off','Tum'];
@@ -1715,6 +1831,58 @@ function renderAnalytics(){
   const et=Object.values(ef).reduce((a,b)=>a+b,0);
   document.getElementById('freq-exact').innerHTML=Object.entries(ef).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([s,c])=>`<div class="freq-item"><span class="freq-score">${s}</span><span class="freq-pct">${c}ครั้ง · ${et?Math.round(c/et*100):0}%</span></div>`).join('')||'<div class="empty">ยังไม่มี exact preds</div>';
 
+  // Score Intelligence Quadrant: real frequency vs exact frequency
+  const median=arr=>{const a=arr.filter(v=>v>0).sort((x,y)=>x-y);if(!a.length)return 0;const mid=Math.floor(a.length/2);return a.length%2?a[mid]:(a[mid-1]+a[mid])/2;};
+  const scoreKeys=[...new Set([...Object.keys(rf),...Object.keys(ef)])];
+  const medReal=median(scoreKeys.map(k=>rf[k]||0));
+  const medExact=median(scoreKeys.map(k=>ef[k]||0));
+  const quadGroups={sweet:[],trap:[],hidden:[],rare:[]};
+  scoreKeys.forEach(k=>{
+    const real=rf[k]||0, exact=ef[k]||0;
+    const p={x:real,y:exact,score:k,realPct:rt?Math.round(real/rt*100):0,exactPct:et?Math.round(exact/et*100):0};
+    const group=real>=medReal&&exact>=medExact?'sweet':real>=medReal&&exact<medExact?'trap':real<medReal&&exact>=medExact?'hidden':'rare';
+    quadGroups[group].push(p);
+  });
+  const qCanvas=document.getElementById('chart-quadrant');
+  if(chartQuadrant)chartQuadrant.destroy();
+  if(qCanvas&&scoreKeys.length){
+    const isNeon=getCurrentTheme()==='neon';
+    const axisColor=isNeon?'rgba(244,255,249,.72)':'#64748b';
+    const gridColor=isNeon?'rgba(0,245,160,.13)':'rgba(148,163,184,.20)';
+    const medianColor=isNeon?'rgba(0,245,160,.55)':'rgba(11,61,46,.45)';
+    const qPlugin={
+      id:'scoreQuadrantPlugin',
+      afterDatasetsDraw(chart){
+        const {ctx,chartArea:{left,right,top,bottom},scales:{x,y}}=chart;
+        ctx.save();
+        const xMed=x.getPixelForValue(medReal), yMed=y.getPixelForValue(medExact);
+        ctx.setLineDash([5,5]);ctx.lineWidth=1;ctx.strokeStyle=medianColor;
+        ctx.beginPath();ctx.moveTo(xMed,top);ctx.lineTo(xMed,bottom);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(left,yMed);ctx.lineTo(right,yMed);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font='700 10px Sarabun, sans-serif';ctx.fillStyle=isNeon?'rgba(244,255,249,.78)':'rgba(51,65,85,.75)';
+        ctx.fillText('🎯 Hidden Gem',left+8,top+14);
+        ctx.fillText('⭐ Sweet Spot',xMed+8,top+14);
+        ctx.fillText('💀 Rare',left+8,yMed+16);
+        ctx.fillText('🤯 Trap Score',xMed+8,yMed+16);
+        ctx.font='800 10px Kanit, sans-serif';ctx.fillStyle=isNeon?'#f4fff9':'#0f172a';
+        chart.data.datasets.forEach((ds,di)=>{const meta=chart.getDatasetMeta(di);meta.data.forEach((pt,i)=>{const raw=ds.data[i];ctx.fillText(raw.score,pt.x+6,pt.y-6);});});
+        ctx.restore();
+      }
+    };
+    chartQuadrant=new Chart(qCanvas.getContext('2d'),{
+      type:'scatter',
+      data:{datasets:[
+        {label:'⭐ Sweet Spot',data:quadGroups.sweet,backgroundColor:'#22c55e',borderColor:'#ffffff',borderWidth:1.5,pointRadius:6,pointHoverRadius:8},
+        {label:'🤯 Trap Score',data:quadGroups.trap,backgroundColor:'#f59e0b',borderColor:'#ffffff',borderWidth:1.5,pointRadius:6,pointHoverRadius:8},
+        {label:'🎯 Hidden Gem',data:quadGroups.hidden,backgroundColor:'#38bdf8',borderColor:'#ffffff',borderWidth:1.5,pointRadius:6,pointHoverRadius:8},
+        {label:'💀 Rare',data:quadGroups.rare,backgroundColor:'#94a3b8',borderColor:'#ffffff',borderWidth:1.5,pointRadius:5,pointHoverRadius:7}
+      ]},
+      plugins:[qPlugin],
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw.score}: เกิดจริง ${ctx.raw.x} นัด (${ctx.raw.realPct}%) · ทายเป๊ะ ${ctx.raw.y} ครั้ง (${ctx.raw.exactPct}%)`}}},scales:{x:{beginAtZero:true,title:{display:true,text:'เกิดจริง (นัด)',color:axisColor,font:{size:10,weight:'700'}},ticks:{precision:0,color:axisColor,font:{size:9}},grid:{color:gridColor}},y:{beginAtZero:true,title:{display:true,text:'ทายเป๊ะ (ครั้ง)',color:axisColor,font:{size:10,weight:'700'}},ticks:{precision:0,color:axisColor,font:{size:9}},grid:{color:gridColor}}}}
+    });
+  }
+
   // Freq: most popular predicted scores
   const pf={};gamePreds().forEach(p=>{if(p.s1===''||p.s2==='')return;const k=normalizeScore(p.s1,p.s2);pf[k]=(pf[k]||0)+1;});
   const pt=Object.values(pf).reduce((a,b)=>a+b,0);
@@ -2201,7 +2369,7 @@ function getCurrentTheme(){
   catch(e){return 'classic';}
 }
 function applyTheme(theme){
-  const t=['classic','night','neon'].includes(theme)?theme:'classic';
+  const t=(theme==='night')?'neon':(['classic','neon'].includes(theme)?theme:'classic');
   document.documentElement.setAttribute('data-theme',t);
   try{localStorage.setItem('wc2026_theme',t);}catch(e){}
   updateThemeUI();
@@ -2226,7 +2394,7 @@ function closeThemeModal(){
 }
 function selectTheme(theme){
   applyTheme(theme);
-  toast(theme==='classic'?'ใช้ Theme Classic แล้ว':theme==='night'?'ใช้ Theme Night Stadium แล้ว':'ใช้ Theme FIFA 2026 Neon แล้ว');
+  toast(theme==='classic'?'ใช้ Theme Classic แล้ว':'ใช้ Theme Neon Stadium แล้ว');
 }
 
 function openRulesModal(){
