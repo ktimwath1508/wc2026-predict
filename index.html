@@ -1094,6 +1094,42 @@ function flagImg(name,size=24){
   return`<img src="https://flagcdn.com/h${size}/${t.fc}.png" width="${size}" height="${Math.round(size*0.75)}" style="border-radius:2px;object-fit:cover;vertical-align:middle" alt="${name}">`;
 }
 
+function cleanTeamNameForChoice(name){return String(name||'').trim();}
+function isKnownTeamName(name){return TEAMS.some(t=>t.name===cleanTeamNameForChoice(name));}
+function getR32ChampionTeams(){
+  const seen=new Set();
+  const r32=allMatches
+    .filter(m=>String(m.stage||'').trim().toUpperCase()==='R32')
+    .flatMap(m=>[m.team1,m.team2])
+    .map(cleanTeamNameForChoice)
+    .filter(t=>t&&t.toUpperCase()!=='TBD'&&isKnownTeamName(t));
+  const unique=r32.filter(t=>{if(seen.has(t))return false;seen.add(t);return true;});
+  const order=new Map(TEAMS.map((t,i)=>[t.name,i]));
+  return unique.sort((a,b)=>(order.get(a)??999)-(order.get(b)??999));
+}
+function getChampionChoices(status=getBonusStatus()){
+  const r32=getR32ChampionTeams();
+  const list=(status==='r2'&&r32.length)?r32:TEAMS.map(t=>t.name);
+  return list.map(name=>TEAMS.find(t=>t.name===name)).filter(Boolean);
+}
+function getChampionChoiceNote(status=getBonusStatus()){
+  const r32=getR32ChampionTeams();
+  if(status==='r2'){
+    return r32.length
+      ? `ช่วงแก้โบนัส R2 เลือกทีมแชมป์ได้เฉพาะทีมที่อยู่ใน R32 แล้ว (${r32.length} ทีม)`
+      : 'ช่วงแก้โบนัส R2 จะใช้รายชื่อทีมจากชีท matches รอบ R32 เมื่อแอดมินอัปเดตครบ';
+  }
+  return 'ต้องเลือกทีมจากรายการเท่านั้น เพื่อให้ชื่อทีมเป็นมาตรฐาน';
+}
+function normalizeChampionPick(name,status=getBonusStatus()){
+  const n=cleanTeamNameForChoice(name);
+  const found=getChampionChoices(status).find(t=>t.name.toLowerCase()===n.toLowerCase());
+  return found?found.name:'';
+}
+function isAllowedChampionPick(name,status=getBonusStatus()){
+  return !!normalizeChampionPick(name,status);
+}
+
 // ── UTILS ──────────────────────────────────────────────────────
 function toast(msg){const e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2400);}
 function thTime(d,t){return new Date(d+'T'+(t||'00:00').padStart(5,'0')+':00+07:00');}
@@ -1337,6 +1373,7 @@ function renderPredict(){
           <div class="champ-dd" id="b-champ-dd"></div>
         </div>
         <div class="champ-show" id="b-champ-show">${cv||''}</div>
+        <div class="bonus-confirm-note" style="margin-top:6px;padding:7px 9px">${getChampionChoiceNote(bonusStatus)}</div>
         <div class="penalty-note" id="b-champ-pen">⚠️ เปลี่ยนทีมแชมป์ จะหัก 5 แต้ม</div>
       </div>
       <div class="bonus-row">
@@ -1479,10 +1516,12 @@ function initBonusInline(status,pl){
   if(!inp)return;
   if(pl?.champ){const s=document.getElementById('b-champ-show');if(s){s.innerHTML=flagImg(pl.champ,20)+' '+pl.champ;s.style.display='block';}}
   inp.addEventListener('input',()=>{
+    if(champSelected&&inp.value!==champSelected)champSelected='';
     const q=inp.value.toLowerCase().replace(/[\u{1F1E0}-\u{1F1FF}\u{1F3F4}]/gu,'').trim();
     if(!q){dd.style.display='none';return;}
-    const f=TEAMS.filter(t=>t.name.toLowerCase().includes(q)).slice(0,8);
-    if(!f.length){dd.style.display='none';return;}
+    const choices=getChampionChoices(status);
+    const f=choices.filter(t=>t.name.toLowerCase().includes(q)).slice(0,10);
+    if(!f.length){dd.innerHTML='<div class="champ-dd-item" style="color:var(--muted);cursor:default">ไม่พบทีมที่เลือกได้</div>';dd.style.display='block';return;}
     dd.innerHTML=f.map(t=>`<div class="champ-dd-item" onclick="selectChamp('${t.name.replace(/'/g,"\\'")}')"><span style="margin-right:6px">${flagImg(t.name,20)}</span>${t.name}</div>`).join('');
     dd.style.display='block';
   });
@@ -1510,7 +1549,11 @@ function selectChamp(name){
 async function saveBonus(){
   const status=getBonusStatus();
   if(status==='frozen')return toast('ไม่อยู่ในช่วงที่เปิดรับ Bonus');
-  const champ=champSelected||document.getElementById('b-champ-inp')?.value.trim()||'';
+  const rawChamp=champSelected||document.getElementById('b-champ-inp')?.value.trim()||'';
+  const champ=rawChamp?normalizeChampionPick(rawChamp,status):'';
+  if(rawChamp&&!champ){
+    return toast(status==='r2'?'กรุณาเลือกทีมแชมป์จากทีมที่อยู่ใน R32 เท่านั้น':'กรุณาเลือกทีมแชมป์จากรายการเท่านั้น');
+  }
   const scorer=document.getElementById('b-scorer-inp')?.value.trim()||'';
   const pl=allPlayers.find(p=>p.name===user)||{};
   const oldPenalty=pl.bonus_penalty||0;
