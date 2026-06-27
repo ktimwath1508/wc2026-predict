@@ -351,7 +351,7 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .rules-list li{margin-bottom:2px}
 .rules-note{font-size:12px;line-height:1.65;background:#f8faf7;border:1px solid #e7eee5;border-radius:10px;padding:9px 10px;color:#475569}
 .official-link-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.official-link-row a{display:flex;align-items:center;justify-content:center;text-decoration:none;border:1.5px solid #d8e0d6;border-radius:10px;padding:10px 8px;color:var(--pitch);font-family:var(--display);font-size:12px;font-weight:800;background:#fbfdfb}
+.official-link-row a,.official-link-row button{display:flex;align-items:center;justify-content:center;text-decoration:none;border:1.5px solid #d8e0d6;border-radius:10px;padding:10px 8px;color:var(--pitch);font-family:var(--display);font-size:12px;font-weight:800;background:#fbfdfb;cursor:pointer}
 @media(max-width:380px){.hero-link{font-size:10.5px;padding:6px 8px}.official-link-row{grid-template-columns:1fr}}
 
 
@@ -869,9 +869,9 @@ html[data-theme="neon"] .admin-result-confirm{background:linear-gradient(135deg,
       <span class="sponsor-wordmark">ชินกฤต เทรดดิ้ง</span>
     </div>
     <div class="hero-links" aria-label="Official links">
-      <a class="hero-link" href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=&wtw-filter=ALL" target="_blank" rel="noopener noreferrer">📅 Fixtures</a>
-      <a class="hero-link" href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings" target="_blank" rel="noopener noreferrer">🏆 Standings</a>
-      <a class="hero-link" href="https://www.espn.co.uk/football/stats/_/league/fifa.world" target="_blank" rel="noopener noreferrer">⚽ Top Scorers</a>
+      <button type="button" class="hero-link" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=&wtw-filter=ALL')">📅 Fixtures</button>
+      <button type="button" class="hero-link" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings')">🏆 Standings</button>
+      <button type="button" class="hero-link" onclick="openExternalLink('https://www.espn.co.uk/football/stats/_/league/fifa.world')">⚽ Top Scorers</button>
       <button type="button" class="hero-link rules" onclick="openRulesModal()">📖 Rules / FAQ</button>
       <button type="button" class="hero-link theme-trigger" onclick="openThemeModal()" aria-label="Theme settings">⚙️</button>
     </div>
@@ -902,8 +902,8 @@ html[data-theme="neon"] .admin-result-confirm{background:linear-gradient(135deg,
       <div class="rules-section">
         <h4>Official Links</h4>
         <div class="official-link-row">
-          <a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=&wtw-filter=ALL" target="_blank" rel="noopener noreferrer">📅 Match & Fixtures</a>
-          <a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings" target="_blank" rel="noopener noreferrer">🏆 FIFA Standings</a>
+          <button type="button" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=&wtw-filter=ALL')">📅 Match & Fixtures</button>
+          <button type="button" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings')">🏆 FIFA Standings</button>
         </div>
         <div class="rules-note" style="margin-top:8px">Top Goal Scorer จะเพิ่มลิงก์ภายหลังเมื่อ FIFA เปิดหน้าข้อมูลอย่างเป็นทางการ</div>
       </div>
@@ -2507,6 +2507,19 @@ function openRulesModal(){
 function closeRulesModal(){
   const m=document.getElementById('rules-modal');
   if(m)m.classList.remove('open');
+}
+function openExternalLink(url){
+  try{
+    if(window.top){
+      window.top.location.href=url;
+      return;
+    }
+  }catch(e){}
+  try{
+    window.location.href=url;
+  }catch(e){
+    window.open(url,'_self');
+  }
 }
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape')closeRulesModal();
