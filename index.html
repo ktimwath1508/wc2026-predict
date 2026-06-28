@@ -1232,14 +1232,18 @@ function getBonusStatus(){
   const now=new Date();
   const gd1Kick=gdFirstKick('1');
   if(gd1Kick&&now<gd1Kick)return 'r1';
-  const r32Ms=allMatches.filter(m=>m.stage==='R32');
-  if(now>=GROUP_STAGE_END&&r32Ms.length){
-    // เปิดแก้ Bonus แบบมี penalty หลังจบรอบ Group จนถึง kickoff คู่แรกของรอบ 32 ทีม
+
+  const r32Ms=allMatches.filter(m=>String(m.stage||'').trim().toUpperCase()==='R32');
+  if(r32Ms.length){
     const firstR32GD=[...new Set(r32Ms.map(m=>m.gd))].sort((a,b)=>+a-+b).shift();
-    const r2End=gdFirstKick(firstR32GD);
-    if(r2End&&now<r2End)return 'r2';
+    const r2Start=getGDOpenTime(firstR32GD); // เปิดรอบแก้โบนัสพร้อมตอน R32 เปิดให้ทาย
+    const r2End=gdFirstKick(firstR32GD);     // ปิดถาวรเมื่อ R32 คู่แรก kickoff
+
+    if(r2Start&&r2End&&now>=r2Start&&now<r2End)return 'r2';
+    return 'frozen';
   }
-  if(now>=GROUP_STAGE_END&&!r32Ms.length)return 'r2';
+
+  if(now>=GROUP_STAGE_END)return 'r2';
   return 'frozen';
 }
 
