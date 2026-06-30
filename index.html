@@ -1857,37 +1857,41 @@ function renderAnalytics(){
   const colors=['#0b3d2e','#f5c518','#2563eb','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#be185d','#65a30d','#ea580c','#0f766e','#4338ca','#b45309'];
   const gdLabels=doneGDs.map(gd=>{const ms=gdMatches(gd);const l=ms[0]?.gd_label||gd;const p=l.split('-');return p.length===3?`${parseInt(p[2])}/${parseInt(p[1])}`:'GD'+gd;});
 
-  // Cumulative score line chart
+  // Cumulative score + rank movement
+  // ใช้ calcStandings(gd) เป็นแหล่งคะแนนกลางเดียวกับ Leaderboard
+  // เพื่อให้กราฟรวม bonus / penalty / stage multiplier / perfect GD ตรงกับตารางคะแนน
+  const standingsSnapshots=doneGDs.map(gd=>calcStandings(gd));
+  const scoreSnapshots=standingsSnapshots.map(st=>{
+    const map={};
+    st.forEach(([name,s])=>{map[name]=s.pts;});
+    return map;
+  });
+  const rankSnapshots=standingsSnapshots.map(st=>getDenseRanks(st));
+
   const lineData={labels:gdLabels,datasets:gamePlayers().map((pl,i)=>{
-    let cum=0;const data=doneGDs.map(gd=>{
-      const ms=gdMatches(gd).filter(m=>m.score1!==''&&m.score2!=='');const mult=ms.length?getStageMult(ms[0].stage):1;
-      let pts=0,predictedAll=true,allExact=true,exCnt=0;
-      ms.forEach(m=>{const pred=allPreds.find(p=>p.match_id===m.match_id&&p.player_name===pl.name);const sc=calcPts(pred,m);if(sc===null){predictedAll=false;allExact=false;return;}pts+=sc;if(sc===3)exCnt++;else allExact=false;});
-      if(ms.length>=3&&predictedAll&&allExact&&exCnt===ms.length)pts*=2;cum+=pts*mult;return cum;});
-    return{label:pl.name,data,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.3,pointRadius:2};})};
+    const data=scoreSnapshots.map(map=>map[pl.name]??0);
+    return{label:pl.name,data,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.3,pointRadius:2};
+  })};
   if(chartLine)chartLine.destroy();
-  chartLine=new Chart(document.getElementById('chart-line').getContext('2d'),{type:'line',data:lineData,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:9},boxWidth:10}}},scales:{y:{beginAtZero:true}}}});
+  chartLine=new Chart(document.getElementById('chart-line').getContext('2d'),{
+    type:'line',
+    data:lineData,
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{font:{size:9},boxWidth:10}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw} แต้ม`}}
+      },
+      scales:{y:{beginAtZero:true}}
+    }
+  });
 
   // Rank movement line chart (rank per GD, Y axis inverted: 1=top)
   const rankData={labels:gdLabels,datasets:gamePlayers().map((pl,i)=>{
-    const data=doneGDs.map((_,idx)=>{
-      // คำนวณ cumulative score ถึง GD นั้น แล้ว rank
-      const gdSlice=doneGDs.slice(0,idx+1);
-      const scores={};gamePlayers().forEach(p=>{scores[p.name]=0;});
-      gdSlice.forEach(gd=>{
-        const ms=gdMatches(gd).filter(m=>m.score1!==''&&m.score2!=='');const mult=ms.length?getStageMult(ms[0].stage):1;
-        gamePlayers().forEach(p2=>{
-          let pts=0,pAll=true,aEx=true,exC=0;
-          ms.forEach(m=>{const pred=allPreds.find(pr=>pr.match_id===m.match_id&&pr.player_name===p2.name);const sc=calcPts(pred,m);if(sc===null){pAll=false;aEx=false;return;}pts+=sc;if(sc===3)exC++;else aEx=false;});
-          if(ms.length>=3&&pAll&&aEx&&exC===ms.length)pts*=2;scores[p2.name]+=pts*mult;
-        });
-      });
-      const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-      const myIdx=sorted.findIndex(([n])=>n===pl.name);
-      const myScore=sorted[myIdx]?.[1]??0;
-      return sorted.filter(([,v],j)=>j<myIdx&&v>myScore).length+1;
-    });
-    return{label:pl.name,data,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.2,pointRadius:3};})};
+    const data=rankSnapshots.map(map=>map[pl.name]??gamePlayers().length);
+    return{label:pl.name,data,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.2,pointRadius:3};
+  })};
   if(chartRank)chartRank.destroy();
   chartRank=new Chart(document.getElementById('chart-rank').getContext('2d'),{type:'line',data:rankData,options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{labels:{font:{size:9},boxWidth:10}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: อันดับ ${ctx.raw}`}}},
