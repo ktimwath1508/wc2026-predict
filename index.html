@@ -1238,6 +1238,21 @@ function looksLikeGvizNoise(v){
   return !x||x.includes('google.visualization')||x.includes('setresponse')||x.startsWith('{version')||x.startsWith('version:')||x==='version';
 }
 
+// ── อ่านข้อมูลผ่าน Apps Script (doGet) แทน gviz ที่ไม่เสถียร ──
+async function fetchViaScript(sheet){
+  const url=`${SCRIPT_URL}?sheet=${encodeURIComponent(sheet)}&t=${Date.now()}`;
+  const r=await fetch(url,{cache:'no-store'});
+  const txt=await r.text();
+  let data;
+  try{ data=JSON.parse(txt); }catch(e){ throw new Error('Apps Script ตอบไม่ใช่ JSON: '+sheet); }
+  if(!Array.isArray(data)) throw new Error((data&&data.error)||'Apps Script error: '+sheet);
+  const rows=data.slice(1).map(row=>row.map(cell=>{
+    if(cell===null||cell===undefined)return'';
+    return String(cell).trim();
+  }));
+  return validateSheetRows(sheet,rows.filter(r=>r[0]));
+}
+
 function validateSheetRows(sheet,rows){
   if(!Array.isArray(rows)||!rows.length)throw new Error('empty sheet: '+sheet);
   const bad=rows.some(r=>looksLikeGvizNoise(r&&r[0]));
@@ -1252,6 +1267,12 @@ function validateSheetRows(sheet,rows){
 
 async function fetchCSV(sheet,attempt){
   attempt=attempt||0;
+  // ลองผ่าน Apps Script ก่อนเสมอ (เสถียรกว่า gviz มาก)
+  try{
+    return await fetchViaScript(sheet);
+  }catch(e){
+    console.warn('fetchViaScript failed, falling back to gviz',sheet,e);
+  }
   const urls=[
     csvURL(sheet),
     `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheet)}&headers=1&tq=${encodeURIComponent('select *')}&tqx=out:csv&t=${Date.now()}`,
@@ -2728,6 +2749,36 @@ function updateHeroRank(){
 initLogin();
 // Auto-refresh ทุก 15 นาที เพื่อ sync GD ใหม่
 setTimeout(()=>location.reload(), 15*60*1000);
+</script>
+<script>
+// ── SAFETY NET ────────────────────────────────────────────────
+// ถ้ามี error กลางทางในสคริปต์หลัก (ทำให้ initLogin() บรรทัดท้ายสุดไม่ถูกเรียก)
+// จะโชว์ error ให้เห็นชัดๆ + ลองเรียก initLogin() ซ้ำให้อัตโนมัติ
+(function(){
+  var errBanner=null;
+  function showErr(msg){
+    if(errBanner)return;
+    errBanner=document.createElement('div');
+    errBanner.style.cssText='position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;font-size:12px;padding:8px 12px;z-index:9999;font-family:sans-serif;line-height:1.5';
+    errBanner.innerHTML='⚠️ พบข้อผิดพลาด: '+String(msg).slice(0,200)+' <button onclick="location.reload()" style="margin-left:8px;padding:3px 10px;border-radius:6px;border:none;background:#fff;color:#dc2626;font-weight:700">รีเฟรช</button>';
+    document.body.prepend(errBanner);
+  }
+  window.addEventListener('error',function(e){ showErr(e.message||e); });
+  window.addEventListener('load',function(){
+    setTimeout(function(){
+      var sel=document.getElementById('sel-name');
+      if(!sel)return;
+      var stillLoading=sel.options.length<=1&&/กำลังโหลด/.test(sel.options[0]&&sel.options[0].text||'');
+      if(stillLoading){
+        if(typeof window.initLogin==='function'){
+          try{ window.initLogin(); }catch(e){ showErr('initLogin retry: '+e.message); }
+        }else{
+          showErr('สคริปต์หลักโหลดไม่สมบูรณ์ (initLogin ไม่ถูกสร้าง)');
+        }
+      }
+    },3500);
+  });
+})();
 </script>
 </body>
 </html>
