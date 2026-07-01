@@ -1346,14 +1346,19 @@ function looksLikeGvizNoise(v){
 }
 
 // ── fetch ที่มี timeout กันค้างตลอดกาลถ้า Google/Apps Script ไม่ตอบ ──
-async function fetchWithTimeout(url,opts,timeoutMs){
+// ใช้ Promise.race แทนการพึ่ง AbortController อย่างเดียว เพราะบางเบราว์เซอร์ (โดยเฉพาะ iOS Safari)
+// อาจไม่ยอมปล่อย fetch() ที่ค้างจริงๆ แม้จะเรียก abort() แล้ว ทำให้ await ค้างตลอดกาล
+function fetchWithTimeout(url,opts,timeoutMs){
+  const timeout=timeoutMs||6000;
   const ctrl=new AbortController();
-  const t=setTimeout(()=>ctrl.abort(),timeoutMs||6000);
-  try{
-    return await fetch(url,Object.assign({},opts,{signal:ctrl.signal}));
-  }finally{
-    clearTimeout(t);
-  }
+  const fetchPromise=fetch(url,Object.assign({},opts,{signal:ctrl.signal}));
+  const timeoutPromise=new Promise((_,reject)=>{
+    setTimeout(()=>{
+      try{ctrl.abort();}catch(e){}
+      reject(new Error('timeout after '+timeout+'ms: '+url));
+    },timeout);
+  });
+  return Promise.race([fetchPromise,timeoutPromise]);
 }
 
 // ── อ่านข้อมูลผ่าน Apps Script (doGet) แทน gviz ที่ไม่เสถียร ──
@@ -2759,12 +2764,49 @@ async function loginSuccess(name,pl){
   document.getElementById('whoami-name').textContent=name;
   if(pl?.is_admin){document.getElementById('nav-admin').style.display='flex';}
   document.getElementById('predict-list').innerHTML='<div class="loading">กำลังโหลด...</div>';
-  await loadAll();
+  await loadAllAndRefreshStatus();
   const fresh=allPlayers.find(p=>p.name===user)||{};
   origChamp=fresh.champ||'';origScorer=fresh.scorer||'';champSelected=fresh.champ||'';
   renderPredict();
   startCountdown();
   updateHeroRank();
+}
+
+// ── แถบสถานะแหล่งข้อมูล (บอกว่ากำลังใช้ของจริงจาก Google หรือของสำรองในโค้ด) ──
+async function loadAllAndRefreshStatus(){
+  window.__usedEmergencyPlayers=false;
+  window.__usedEmergencyMatches=false;
+  window.__usedEmergencyEmpty=false;
+  await loadAll();
+  renderDataSourceBanner();
+}
+function renderDataSourceBanner(){
+  let el=document.getElementById('data-source-banner');
+  const usingFallback=window.__usedEmergencyPlayers||window.__usedEmergencyMatches||window.__usedEmergencyEmpty;
+  if(!usingFallback){
+    if(el)el.remove();
+    return;
+  }
+  if(!el){
+    el=document.createElement('div');
+    el.id='data-source-banner';
+    el.style.cssText='position:sticky;top:0;z-index:200;background:#d97706;color:#fff;font-size:11.5px;font-weight:700;padding:8px 12px;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap';
+    document.getElementById('app').prepend(el);
+  }
+  const parts=[];
+  if(window.__usedEmergencyPlayers)parts.push('รายชื่อผู้เล่น');
+  if(window.__usedEmergencyMatches)parts.push('ตารางแข่ง');
+  if(window.__usedEmergencyEmpty)parts.push('คำทาย/ผลบอนัส');
+  el.innerHTML=`⚠️ กำลังใช้ข้อมูลสำรอง (${parts.join(', ')}) เพราะ Google Sheets ยังโหลดไม่ได้ &nbsp;`+
+    `<button type="button" id="btn-recheck-google" style="padding:4px 10px;border-radius:8px;border:1px solid #fff;background:transparent;color:#fff;font-weight:700;cursor:pointer">เช็คอีกครั้ง</button>`;
+  document.getElementById('btn-recheck-google').addEventListener('click',async(ev)=>{
+    ev.target.textContent='กำลังเช็ค...';
+    ev.target.disabled=true;
+    await loadAllAndRefreshStatus();
+    if(!window.__usedEmergencyPlayers&&!window.__usedEmergencyMatches&&!window.__usedEmergencyEmpty){
+      renderPredict();
+    }
+  });
 }
 
 
