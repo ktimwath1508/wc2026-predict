@@ -1043,8 +1043,29 @@ html[data-theme="neon"] .admin-result-confirm{background:linear-gradient(135deg,
 <div class="toast" id="toast"></div>
 
 <script>
-const SHEET_ID='1SjdZTyrpf4x1CKpzro-Rs5qYxDNCAfxZyHL2a6kaubs';
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbzLq7AXp3KDTtuWFpeHqEEqD0shcJuxWHnbS80fAG77BtFBH6VAObVOm0YWQwC4SODlPA/exec';
+const SHEET_ID='1L0dir3bCOSJAdRfhDPojC98HiShGQcK5ItPkPyLCmT0';
+// ── EMERGENCY FALLBACK (ใช้เฉพาะตอน Google Sheets ล่ม/gviz error) ──
+// ดึงมาจาก sheet players ล่าสุด ถ้า Google โหลด sheet ไม่ได้จริงๆ ระบบจะใช้ชุดนี้แทนชั่วคราว
+// **หมายเหตุ: ลบ/อัปเดตชุดนี้เมื่อ Google Sheets กลับมาใช้ได้ปกติแล้ว ไม่งั้นการเปลี่ยน PIN/bonus pick ใหม่จะไม่ถูกใช้**
+const EMERGENCY_PLAYERS_ROWS=[
+["Aeiy","fd03846ecd462eca4fc3446cf177b6088ef757b8e15a7549eb36b8ffd2cca841","England","Messi","5","0"],
+["Aont","d6af1e4b23dbc36e5621554f0fa5e1af2cffbe3f636a96a0c2ad060dbd51ee39","England","Harry Kane","0","0"],
+["Ball","0091310dc35c0cc70fd8191dec725330e79e60356ee61d394bdd159aa5a0a51c","Spain","Mbappe","0","0"],
+["Dee+","","","","0","0"],
+["Eak","51e9435d177699be4e6531fe23a685631c3f8b70674d064452db9288aaee6292","France","Messi","5","0"],
+["Guang","a514bef4dcf72d55bfd9ca9b0e82d5939f0d4f24ab3813d0d68d0361d6c9cc81","England","Mbappe","0","0"],
+["Joy","fd03846ecd462eca4fc3446cf177b6088ef757b8e15a7549eb36b8ffd2cca841","France","Harry Kane","0","0"],
+["Light","","","","0","0"],
+["Neung","","","","0","0"],
+["Off","","","","0","0"],
+["Ohm","5de91c57724d1df1e29aef8da06afada34f5d24cfb123116a6e8bf7f6d9257a5","Japan","Messi","5","1"],
+["Pop","07217e6815361bfc3ca2207fd4559f521ffb2b0b3ae7a8d6cc0c84fc18de0508","Portugal","Messi","5","0"],
+["Sigma","c002179d44ea6fe8662247edb88f421d4fe3a57cfe978e4730a2528dd59a570b","Portugal","Messi","5","0"],
+["Ton","736e2a85d7b2ee1bbc0b757d042d40af5af83e04d94b104f4c6012dd8d693a28","Spain","Messi","5","1"],
+["Toon","71aaf37121e4e0e6651abcdcdb6c00a25bcf82b7f71d309b6827bd66badf9c19","Spain","Mbappe","0","0"],
+["Tum","","","","0","0"]
+];
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbyVL2_PZlE5gaKTAj9E3bxvHAqrn54PY_Aufzzyitfah06jnnTfjFqzvhmTHorU-3fC/exec';
 const GROUP_STAGE_END=new Date('2026-06-28T23:00:00+07:00');
 // เปิดให้ทาย GD โดยอิงจาก kickoff คู่แรกของ GD นั้น
 // ใช้วิธี "ลบชั่วโมงจาก kickoff" เพื่อเลี่ยงปัญหา timezone/date จากการ set เวลา 14:00 ตรง ๆ
@@ -1252,6 +1273,11 @@ async function fetchCSV(sheet,attempt){
   if(attempt<2){
     await new Promise(res=>setTimeout(res,600*(attempt+1)));
     return fetchCSV(sheet,attempt+1);
+  }
+  if(sheet==='players'){
+    console.warn('ใช้ EMERGENCY_PLAYERS_ROWS เพราะ Google Sheets โหลดไม่ได้จริงๆ');
+    window.__usedEmergencyPlayers=true;
+    return EMERGENCY_PLAYERS_ROWS;
   }
   throw lastErr||new Error('load sheet failed: '+sheet);
 }
@@ -2509,6 +2535,9 @@ async function initLogin(){
     allPlayers=allPlayers.filter(p=>p.name&&!looksLikeGvizNoise(p.name));
     if(!allPlayers.length)throw new Error('ไม่พบรายชื่อผู้เล่นที่ถูกต้อง');
     sel.innerHTML='<option value="">-- เลือกชื่อ --</option>'+allPlayers.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+    if(window.__usedEmergencyPlayers){
+      err.innerHTML='<span style="color:var(--warn)">⚠️ Google Sheets โหลดไม่ได้ตอนนี้ ใช้รายชื่อสำรองชั่วคราว (PIN เก่ายังใช้ได้ปกติ)</span>';
+    }
   }catch(e){
     sel.innerHTML='<option value="">-- โหลดไม่ได้ --</option>';
     err.innerHTML='โหลดรายชื่อไม่ได้ (เซิร์ฟเวอร์ Google Sheets อาจแน่นชั่วคราว) <button type="button" id="btn-retry-login" style="margin-left:6px;padding:4px 10px;border-radius:8px;border:1px solid var(--pitch);background:#fff;color:var(--pitch);font-weight:700;cursor:pointer">ลองใหม่</button>';
