@@ -1345,10 +1345,21 @@ function looksLikeGvizNoise(v){
   return !x||x.includes('google.visualization')||x.includes('setresponse')||x.startsWith('{version')||x.startsWith('version:')||x==='version';
 }
 
+// ── fetch ที่มี timeout กันค้างตลอดกาลถ้า Google/Apps Script ไม่ตอบ ──
+async function fetchWithTimeout(url,opts,timeoutMs){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),timeoutMs||6000);
+  try{
+    return await fetch(url,Object.assign({},opts,{signal:ctrl.signal}));
+  }finally{
+    clearTimeout(t);
+  }
+}
+
 // ── อ่านข้อมูลผ่าน Apps Script (doGet) แทน gviz ที่ไม่เสถียร ──
 async function fetchViaScript(sheet){
   const url=`${SCRIPT_URL}?sheet=${encodeURIComponent(sheet)}&t=${Date.now()}`;
-  const r=await fetch(url,{cache:'no-store'});
+  const r=await fetchWithTimeout(url,{cache:'no-store'},4000);
   const txt=await r.text();
   let data;
   try{ data=JSON.parse(txt); }catch(e){ throw new Error('Apps Script ตอบไม่ใช่ JSON: '+sheet); }
@@ -1380,15 +1391,11 @@ async function fetchCSV(sheet,attempt){
   }catch(e){
     console.warn('fetchViaScript failed, falling back to gviz',sheet,e);
   }
-  const urls=[
-    csvURL(sheet),
-    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheet)}&headers=1&tq=${encodeURIComponent('select *')}&tqx=out:csv&t=${Date.now()}`,
-    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheet)}&headers=1&tq=${encodeURIComponent('select *')}&t=${Date.now()}`
-  ];
+  const urls=[csvURL(sheet)];
   let lastErr=null;
   for(const url of urls){
     try{
-      const r=await fetch(url,{cache:'no-store'});
+      const r=await fetchWithTimeout(url,{cache:'no-store'},3000);
       const txt=await r.text();
       const rows=parseCSV(txt);
       return validateSheetRows(sheet,rows);
@@ -1397,9 +1404,9 @@ async function fetchCSV(sheet,attempt){
       console.warn('fetchCSV fallback failed',sheet,e);
     }
   }
-  // ถ้าทุก URL ล้มเหลว (มักเกิดจาก Google gviz ติด rate-limit ช่วงคนเข้าพร้อมกันตอนใกล้เตะ) ลองใหม่อัตโนมัติ 2 ครั้งก่อนยอมแพ้
-  if(attempt<2){
-    await new Promise(res=>setTimeout(res,600*(attempt+1)));
+  // มี emergency data รองรับ players/matches อยู่แล้ว ไม่ต้องรอ retry ซ้ำให้ช้า ข้ามไปใช้ fallback ทันที
+  if(attempt<1&&sheet!=='players'&&sheet!=='matches'){
+    await new Promise(res=>setTimeout(res,300));
     return fetchCSV(sheet,attempt+1);
   }
   if(sheet==='players'){
