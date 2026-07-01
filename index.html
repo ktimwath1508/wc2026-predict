@@ -1151,8 +1151,95 @@ function abbr(n){const m={
 function fmtDate(lbl){if(!lbl)return'';const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];const p=lbl.split('-');if(p.length===3)return`${parseInt(p[2])} ${months[parseInt(p[1])-1]}`;return lbl;}
 function fmtDeadline(gd){const fk=gdFirstKick(gd);if(!fk)return null;const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];return`${fk.getDate()} ${months[fk.getMonth()]} เวลา ${String(fk.getHours()).padStart(2,'0')}:${String(fk.getMinutes()).padStart(2,'0')} น.`;}
 async function sha256(str){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('wc2026::'+str));return Array.from(new Uint8Array(buf)).map(x=>x.toString(16).padStart(2,'0')).join('');}
-function parseCSV(txt){return txt.trim().split('\n').slice(1).map(line=>{const cols=[];let cur='',q=false;for(const c of line){if(c==='"')q=!q;else if(c===','&&!q){cols.push(cur.trim());cur='';}else cur+=c;}cols.push(cur.trim());return cols;}).filter(r=>r[0]);}
-async function fetchCSV(sheet){const r=await fetch(csvURL(sheet));return parseCSV(await r.text());}
+function parseCSV(txt){
+  const raw=String(txt||'').trim();
+  if(!raw)return[];
+
+  // Google Visualization บางครั้งตอบกลับเป็น JS object เช่น
+  // google.visualization.Query.setResponse({version:'0.6', ...}) แทน CSV
+  // ถ้าใช้ parser CSV เดิม จะหลุดมาเป็นชื่อผู้เล่น "{version:0.6" ในหน้า Login
+  if(raw.includes('google.visualization.Query.setResponse')){
+    return parseGvizResponse(raw);
+  }
+  if(raw[0]==='{'&&raw.includes('version')&&raw.includes('table')){
+    return parseGvizResponse(raw);
+  }
+
+  const lines=raw.split(/\r?\n/).filter(Boolean);
+  if(lines.length<=1)return[];
+  return lines.slice(1).map(line=>{
+    const cols=[];let cur='',q=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){
+        if(q&&line[i+1]==='"'){cur+='"';i++;}
+        else q=!q;
+      }else if(c===','&&!q){
+        cols.push(cur.trim());cur='';
+      }else cur+=c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  }).filter(r=>r[0]&&!looksLikeGvizNoise(r[0]));
+}
+
+function parseGvizResponse(txt){
+  try{
+    let body=String(txt||'').trim();
+    const m=body.match(/google\.visualization\.Query\.setResponse\((.*)\);?\s*$/s);
+    if(m)body=m[1];
+    const data=(new Function('return ('+body+');'))();
+    if(!data||data.status==='error'){
+      throw new Error((data&&data.errors&&data.errors[0]&&(data.errors[0].detailed_message||data.errors[0].message))||'GViz error');
+    }
+    const rows=(data.table&&data.table.rows)||[];
+    return rows.map(row=>(row.c||[]).map(cell=>{
+      if(!cell||cell.v===null||cell.v===undefined)return'';
+      return String(cell.v).trim();
+    })).filter(r=>r[0]&&!looksLikeGvizNoise(r[0]));
+  }catch(e){
+    console.warn('parseGvizResponse failed',e);
+    return[];
+  }
+}
+
+function looksLikeGvizNoise(v){
+  const x=String(v||'').trim().toLowerCase();
+  return !x||x.includes('google.visualization')||x.includes('setresponse')||x.startsWith('{version')||x.startsWith('version:')||x==='version';
+}
+
+function validateSheetRows(sheet,rows){
+  if(!Array.isArray(rows)||!rows.length)throw new Error('empty sheet: '+sheet);
+  const bad=rows.some(r=>looksLikeGvizNoise(r&&r[0]));
+  if(bad)throw new Error('invalid sheet response: '+sheet);
+  if(sheet==='players'){
+    const real=rows.filter(r=>r[0]&&String(r[0]).trim()&&!looksLikeGvizNoise(r[0]));
+    if(!real.length)throw new Error('players sheet has no valid rows');
+    return real;
+  }
+  return rows;
+}
+
+async function fetchCSV(sheet){
+  const urls=[
+    csvURL(sheet),
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheet)}&headers=1&tq=${encodeURIComponent('select *')}&tqx=out:csv&t=${Date.now()}`,
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheet)}&headers=1&tq=${encodeURIComponent('select *')}&t=${Date.now()}`
+  ];
+  let lastErr=null;
+  for(const url of urls){
+    try{
+      const r=await fetch(url,{cache:'no-store'});
+      const txt=await r.text();
+      const rows=parseCSV(txt);
+      return validateSheetRows(sheet,rows);
+    }catch(e){
+      lastErr=e;
+      console.warn('fetchCSV fallback failed',sheet,e);
+    }
+  }
+  throw lastErr||new Error('load sheet failed: '+sheet);
+}
 
 // ── DATA ───────────────────────────────────────────────────────
 async function loadAll(){
@@ -1857,41 +1944,37 @@ function renderAnalytics(){
   const colors=['#0b3d2e','#f5c518','#2563eb','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#be185d','#65a30d','#ea580c','#0f766e','#4338ca','#b45309'];
   const gdLabels=doneGDs.map(gd=>{const ms=gdMatches(gd);const l=ms[0]?.gd_label||gd;const p=l.split('-');return p.length===3?`${parseInt(p[2])}/${parseInt(p[1])}`:'GD'+gd;});
 
-  // Cumulative score + rank movement
-  // ใช้ calcStandings(gd) เป็นแหล่งคะแนนกลางเดียวกับ Leaderboard
-  // เพื่อให้กราฟรวม bonus / penalty / stage multiplier / perfect GD ตรงกับตารางคะแนน
-  const standingsSnapshots=doneGDs.map(gd=>calcStandings(gd));
-  const scoreSnapshots=standingsSnapshots.map(st=>{
-    const map={};
-    st.forEach(([name,s])=>{map[name]=s.pts;});
-    return map;
-  });
-  const rankSnapshots=standingsSnapshots.map(st=>getDenseRanks(st));
-
+  // Cumulative score line chart
   const lineData={labels:gdLabels,datasets:gamePlayers().map((pl,i)=>{
-    const data=scoreSnapshots.map(map=>map[pl.name]??0);
-    return{label:pl.name,data,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.3,pointRadius:2};
-  })};
+    let cum=0;const data=doneGDs.map(gd=>{
+      const ms=gdMatches(gd).filter(m=>m.score1!==''&&m.score2!=='');const mult=ms.length?getStageMult(ms[0].stage):1;
+      let pts=0,predictedAll=true,allExact=true,exCnt=0;
+      ms.forEach(m=>{const pred=allPreds.find(p=>p.match_id===m.match_id&&p.player_name===pl.name);const sc=calcPts(pred,m);if(sc===null){predictedAll=false;allExact=false;return;}pts+=sc;if(sc===3)exCnt++;else allExact=false;});
+      if(ms.length>=3&&predictedAll&&allExact&&exCnt===ms.length)pts*=2;cum+=pts*mult;return cum;});
+    return{label:pl.name,data,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.3,pointRadius:2};})};
   if(chartLine)chartLine.destroy();
-  chartLine=new Chart(document.getElementById('chart-line').getContext('2d'),{
-    type:'line',
-    data:lineData,
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{
-        legend:{labels:{font:{size:9},boxWidth:10}},
-        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw} แต้ม`}}
-      },
-      scales:{y:{beginAtZero:true}}
-    }
-  });
+  chartLine=new Chart(document.getElementById('chart-line').getContext('2d'),{type:'line',data:lineData,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:9},boxWidth:10}}},scales:{y:{beginAtZero:true}}}});
 
   // Rank movement line chart (rank per GD, Y axis inverted: 1=top)
   const rankData={labels:gdLabels,datasets:gamePlayers().map((pl,i)=>{
-    const data=rankSnapshots.map(map=>map[pl.name]??gamePlayers().length);
-    return{label:pl.name,data,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.2,pointRadius:3};
-  })};
+    const data=doneGDs.map((_,idx)=>{
+      // คำนวณ cumulative score ถึง GD นั้น แล้ว rank
+      const gdSlice=doneGDs.slice(0,idx+1);
+      const scores={};gamePlayers().forEach(p=>{scores[p.name]=0;});
+      gdSlice.forEach(gd=>{
+        const ms=gdMatches(gd).filter(m=>m.score1!==''&&m.score2!=='');const mult=ms.length?getStageMult(ms[0].stage):1;
+        gamePlayers().forEach(p2=>{
+          let pts=0,pAll=true,aEx=true,exC=0;
+          ms.forEach(m=>{const pred=allPreds.find(pr=>pr.match_id===m.match_id&&pr.player_name===p2.name);const sc=calcPts(pred,m);if(sc===null){pAll=false;aEx=false;return;}pts+=sc;if(sc===3)exC++;else aEx=false;});
+          if(ms.length>=3&&pAll&&aEx&&exC===ms.length)pts*=2;scores[p2.name]+=pts*mult;
+        });
+      });
+      const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+      const myIdx=sorted.findIndex(([n])=>n===pl.name);
+      const myScore=sorted[myIdx]?.[1]??0;
+      return sorted.filter(([,v],j)=>j<myIdx&&v>myScore).length+1;
+    });
+    return{label:pl.name,data,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.2,pointRadius:3};})};
   if(chartRank)chartRank.destroy();
   chartRank=new Chart(document.getElementById('chart-rank').getContext('2d'),{type:'line',data:rankData,options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{labels:{font:{size:9},boxWidth:10}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: อันดับ ${ctx.raw}`}}},
@@ -2404,6 +2487,8 @@ async function initLogin(){
   try{
     const rows=await fetchCSV('players');
     allPlayers=rows.map(r=>({name:r[0],pin_hash:r[1]||'',champ:r[2]||'',scorer:r[3]||'',bonus_penalty:parseInt(r[4]||'0')||0,is_admin:r[5]==='1'}));
+    allPlayers=allPlayers.filter(p=>p.name&&!looksLikeGvizNoise(p.name));
+    if(!allPlayers.length)throw new Error('ไม่พบรายชื่อผู้เล่นที่ถูกต้อง');
     const sel=document.getElementById('sel-name');
     sel.innerHTML='<option value="">-- เลือกชื่อ --</option>'+allPlayers.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
   }catch(e){
