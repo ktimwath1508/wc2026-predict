@@ -697,8 +697,18 @@ html[data-theme="neon"] .theme-option.active .theme-check{background:#00f5a0!imp
 
 
 
-/* === Neon readability patch v2 === */
+/* === Neon readability patch v3 — Scoreboard edition === */
+/* Palette lifted from the broadcast scoreboard: black shell, mint/cyan digit
+   cells, violet neon frame, red end-caps. */
 html[data-theme="neon"]{
+  --sb-shell-bg:linear-gradient(180deg,#0b0b0f,#000000);
+  --sb-shell-border:#7c5cff;
+  --sb-shell-glow:rgba(124,92,255,.55);
+  --sb-cell-top:#9dffe9;
+  --sb-cell-bottom:#4fe3ce;
+  --sb-cell-text:#04211d;
+  --sb-cell-glow:rgba(79,227,206,.55);
+  --sb-red:#ff2d4e;
   --score-bg:#0f221d;
   --score-bg-soft:#132b24;
   --score-border:rgba(0,245,160,.55);
@@ -709,37 +719,63 @@ html[data-theme="neon"]{
   --correct-bg:linear-gradient(135deg,rgba(245,197,66,.22),rgba(245,197,66,.08));
   --correct-border:rgba(245,197,66,.50);
 }
+/* Black pill "shell" that frames the two score cells, echoing the
+   scoreboard bar — violet neon outline + tiny red end-caps. */
+html[data-theme="neon"] .score-inputs,
+html[data-theme="neon"] .score-pair{
+  position:relative;
+  background:var(--sb-shell-bg)!important;
+  border-radius:999px;
+  padding:5px 12px;
+  gap:8px!important;
+  box-shadow:
+    0 0 0 1.5px var(--sb-shell-border),
+    0 0 14px var(--sb-shell-glow),
+    inset 0 0 0 1px rgba(255,255,255,.04);
+}
+html[data-theme="neon"] .score-inputs::before,
+html[data-theme="neon"] .score-inputs::after,
+html[data-theme="neon"] .score-pair::before,
+html[data-theme="neon"] .score-pair::after{
+  content:"";position:absolute;top:2px;bottom:2px;width:4px;border-radius:3px;
+  background:linear-gradient(180deg,var(--sb-red),#a10022);
+  box-shadow:0 0 8px rgba(255,45,78,.65);
+}
+html[data-theme="neon"] .score-inputs::before,
+html[data-theme="neon"] .score-pair::before{left:-2px}
+html[data-theme="neon"] .score-inputs::after,
+html[data-theme="neon"] .score-pair::after{right:-2px}
 html[data-theme="neon"] .score-input,
 html[data-theme="neon"] .score-pair input{
-  background:var(--score-bg)!important;
-  color:var(--score-text)!important;
-  border-color:var(--score-border)!important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),0 0 14px rgba(0,245,160,.10)!important;
-  text-shadow:0 0 10px rgba(0,245,160,.30)!important;
+  background:linear-gradient(180deg,var(--sb-cell-top),var(--sb-cell-bottom))!important;
+  color:var(--sb-cell-text)!important;
+  border:none!important;
+  border-radius:9px!important;
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.5),0 0 10px var(--sb-cell-glow)!important;
+  text-shadow:none!important;
+  font-weight:900!important;
 }
 html[data-theme="neon"] .score-input:focus,
 html[data-theme="neon"] .score-pair input:focus{
-  background:#102820!important;
-  border-color:#00f5a0!important;
-  box-shadow:0 0 0 3px rgba(0,245,160,.15),0 0 18px rgba(0,245,160,.22)!important;
+  background:linear-gradient(180deg,#c3fff2,var(--sb-cell-bottom))!important;
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.7),0 0 0 2px var(--sb-shell-border),0 0 16px var(--sb-cell-glow)!important;
 }
 html[data-theme="neon"] .score-input:disabled,
 html[data-theme="neon"] .score-pair input:disabled,
 html[data-theme="neon"] .admin-match-item.disabled input,
 html[data-theme="neon"] .admin-match-item.result-locked input{
-  background:#15211d!important;
-  color:var(--score-muted)!important;
-  border-color:rgba(142,166,154,.30)!important;
-  box-shadow:none!important;
+  background:linear-gradient(180deg,#3a4744,#2a3532)!important;
+  color:#93a6a1!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)!important;
   text-shadow:none!important;
 }
 html[data-theme="neon"] .match-card.saved .score-input:disabled{
-  background:var(--score-bg-soft)!important;
-  color:var(--score-text)!important;
-  border-color:rgba(0,245,160,.48)!important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03),0 0 12px rgba(0,245,160,.10)!important;
+  background:linear-gradient(180deg,var(--sb-cell-top),var(--sb-cell-bottom))!important;
+  color:var(--sb-cell-text)!important;
+  opacity:.88;
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.4),0 0 8px var(--sb-cell-glow)!important;
 }
-html[data-theme="neon"] .score-sep{color:rgba(244,255,249,.68)!important;text-shadow:none!important}
+html[data-theme="neon"] .score-sep{color:#e7e9ff!important;text-shadow:0 0 8px rgba(124,92,255,.55)!important;font-weight:800!important}
 html[data-theme="neon"] .edit-btn,
 html[data-theme="neon"] .btn-bonus-edit{
   background:rgba(255,255,255,.04)!important;
