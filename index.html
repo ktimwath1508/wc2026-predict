@@ -2142,7 +2142,9 @@ function renderAnalytics(){
       let pts=0,predictedAll=true,allExact=true,exCnt=0;
       ms.forEach(m=>{const pred=allPreds.find(p=>p.match_id===m.match_id&&p.player_name===pl.name);const sc=calcPts(pred,m);if(sc===null){predictedAll=false;allExact=false;return;}pts+=sc;if(sc===3)exCnt++;else allExact=false;});
       if(ms.length>=3&&predictedAll&&allExact&&exCnt===ms.length)pts*=2;cum+=pts*mult;return cum;});
-    return{label:pl.name,data,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.3,pointRadius:2};})};
+    const penalty=pl.bonus_penalty||0;
+    const adjusted=data.map(v=>v-penalty);
+    return{label:pl.name,data:adjusted,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.3,pointRadius:2};})};
   if(chartLine)chartLine.destroy();
   chartLine=new Chart(document.getElementById('chart-line').getContext('2d'),{type:'line',data:lineData,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:9},boxWidth:10}}},scales:{y:{beginAtZero:true}}}});
 
@@ -2160,6 +2162,7 @@ function renderAnalytics(){
           if(ms.length>=3&&pAll&&aEx&&exC===ms.length)pts*=2;scores[p2.name]+=pts*mult;
         });
       });
+      gamePlayers().forEach(p2=>{scores[p2.name]-=(p2.bonus_penalty||0);});
       const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
       const myIdx=sorted.findIndex(([n])=>n===pl.name);
       const myScore=sorted[myIdx]?.[1]??0;
