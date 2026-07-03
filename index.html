@@ -720,7 +720,7 @@ html[data-theme="neon"]{
   --correct-border:rgba(245,197,66,.50);
 }
 /* Black pill "shell" that frames the two score cells, echoing the
-   scoreboard bar — violet neon outline + tiny red end-caps. */
+   scoreboard bar — a single clean violet neon outline, no extra clutter. */
 html[data-theme="neon"] .score-inputs,
 html[data-theme="neon"] .score-pair{
   position:relative;
@@ -733,18 +733,6 @@ html[data-theme="neon"] .score-pair{
     0 0 14px var(--sb-shell-glow),
     inset 0 0 0 1px rgba(255,255,255,.04);
 }
-html[data-theme="neon"] .score-inputs::before,
-html[data-theme="neon"] .score-inputs::after,
-html[data-theme="neon"] .score-pair::before,
-html[data-theme="neon"] .score-pair::after{
-  content:"";position:absolute;top:2px;bottom:2px;width:4px;border-radius:3px;
-  background:linear-gradient(180deg,var(--sb-red),#a10022);
-  box-shadow:0 0 8px rgba(255,45,78,.65);
-}
-html[data-theme="neon"] .score-inputs::before,
-html[data-theme="neon"] .score-pair::before{left:-2px}
-html[data-theme="neon"] .score-inputs::after,
-html[data-theme="neon"] .score-pair::after{right:-2px}
 html[data-theme="neon"] .score-input,
 html[data-theme="neon"] .score-pair input{
   background:linear-gradient(180deg,var(--sb-cell-top),var(--sb-cell-bottom))!important;
