@@ -266,6 +266,11 @@ body{font-family:var(--thai);background:var(--paper);color:var(--ink);min-height
 .accordion-body.open{display:block}
 .admin-input{width:100%;padding:10px 12px;border:1.5px solid #d8e0d6;border-radius:var(--r-sm);font-size:14px;font-family:var(--thai);background:#fff;outline:none;margin-bottom:8px}
 .admin-input:focus{border-color:var(--gold)}
+.admin-scorer-other{display:none}
+.admin-scorer-other.open{display:block}
+.admin-note{font-size:11px;color:var(--muted);line-height:1.55;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:8px 10px;margin:0 0 10px}
+html[data-theme="neon"] .admin-input option,
+html[data-theme="night"] .admin-input option{background:#10231e;color:#f4fff9}
 .admin-match-item{border-bottom:1px solid #eef1ed;padding:10px 0}
 .admin-match-item:last-child{border-bottom:none}
 .admin-match-name{font-weight:700;font-size:13px;margin-bottom:7px}
@@ -2454,6 +2459,9 @@ function selectAdmChamp(name){
 // ── ADMIN TAB ──────────────────────────────────────────────────
 function renderAdmin(){
   const content=document.getElementById('admin-content');
+  const scorerChoices=['Messi','Mbappe','Kane','Haaland'];
+  const curScorer=settings['scorer_result']||'';
+  const scorerIsOther=!!curScorer&&!scorerChoices.includes(curScorer);
   let html=`<div class="admin-card">
     <h3>🏆 ผลแชมป์ / ดาวซัลโว</h3>
     <label style="font-size:12px;font-weight:700;color:#33503f;display:block;margin-bottom:4px">ทีมแชมป์จริง</label>
@@ -2464,7 +2472,13 @@ function renderAdmin(){
     <div id="adm-champ-show" style="margin-bottom:8px;padding:7px 12px;background:#fffbeb;border-radius:8px;font-size:13px;font-weight:600;color:var(--pitch);display:${settings['champion_result']?'block':'none'}">${settings['champion_result']?`${flagImg(settings['champion_result'],20)||''} ${settings['champion_result']}`||'':''}</div>
     <div class="admin-result-lock-note" style="margin:6px 0 10px">Dropdown จะแสดงเฉพาะทีมที่ยังอยู่ในรอบล่าสุดของ bracket: R32→32, R16→16, QF→8, SF→4, Final→2 และหลังบันทึกผล Final จะเหลือทีมแชมป์เท่านั้น</div>
     <label style="font-size:12px;font-weight:700;color:#33503f;display:block;margin-bottom:4px">ดาวซัลโวจริง</label>
-    <input class="admin-input" id="adm-scorer" value="${settings['scorer_result']||''}" placeholder="ชื่อนักเตะ">
+    <select class="admin-input" id="adm-scorer-select">
+      <option value="">-- เลือกดาวซัลโว --</option>
+      ${scorerChoices.map(n=>`<option value="${n}" ${curScorer===n?'selected':''}>${n}</option>`).join('')}
+      <option value="__OTHER__" ${scorerIsOther?'selected':''}>อื่นๆ (โปรดระบุ)</option>
+    </select>
+    <input class="admin-input admin-scorer-other ${scorerIsOther?'open':''}" id="adm-scorer-other" value="${scorerIsOther?curScorer:''}" placeholder="ระบุชื่อนักเตะอื่นๆ">
+    <div class="admin-note">หมายเหตุ: หากเลือก “อื่นๆ” แล้วไม่มีผู้เล่นทายชื่อนี้ไว้ จะไม่มีผลต่อการบวกคะแนน และการตัดสินดาวซัลโวให้อิง FIFA Golden Boot อย่างเป็นทางการ</div>
     <button class="btn-sm" id="btn-save-settings">บันทึก</button>
     <span id="adm-set-ok" style="font-size:11px;color:var(--good);margin-left:8px;display:none">✓ บันทึกแล้ว</span>
   </div>`;
@@ -2555,9 +2569,17 @@ function renderAdmin(){
     document.addEventListener('click',e=>{if(!e.target.closest('#adm-champ-inp')&&!e.target.closest('#adm-champ-dd'))admDD.style.display='none';});
   }
 
+  const admScorerSel=document.getElementById('adm-scorer-select');
+  const admScorerOther=document.getElementById('adm-scorer-other');
+  admScorerSel?.addEventListener('change',()=>{
+    if(admScorerOther)admScorerOther.classList.toggle('open',admScorerSel.value==='__OTHER__');
+    if(admScorerSel.value!=='__OTHER__'&&admScorerOther)admScorerOther.value='';
+  });
+
   document.getElementById('btn-save-settings').onclick=async()=>{
     const champ=admChampSelected||document.getElementById('adm-champ-inp')?.value.trim()||'';
-    const scorer=document.getElementById('adm-scorer').value.trim();
+    const scorerSel=document.getElementById('adm-scorer-select')?.value||'';
+    const scorer=scorerSel==='__OTHER__'?(document.getElementById('adm-scorer-other')?.value.trim()||''):scorerSel;
     if(champ&&!isValidChampionResultPick(champ)){
       toast('ทีมนี้ไม่ได้อยู่ในรอบล่าสุดของ bracket');
       renderAdmChampOptions(champ);
