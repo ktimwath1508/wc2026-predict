@@ -822,6 +822,19 @@ html[data-theme="neon"] .admin-result-score{
 }
 html[data-theme="neon"] .admin-result-cancel{background:rgba(255,255,255,.08)!important;color:#e8fff4!important}
 html[data-theme="neon"] .admin-result-confirm{background:linear-gradient(135deg,#00f5a0,#00c2ff)!important;color:#03100c!important}
+
+
+/* Admin champion dropdown readability + alive-team picker */
+.admin-champ-dd{background:var(--modal-bg)!important;color:var(--ink)!important;border:1.5px solid var(--gold)!important;max-height:210px!important;overflow-y:auto!important;z-index:80!important}
+.admin-champ-dd .champ-dd-item{color:var(--ink);background:var(--modal-bg);border-bottom:1px solid var(--border);font-weight:700}
+.admin-champ-dd .champ-dd-item:hover{background:var(--soft-card)}
+html[data-theme="neon"] .champ-dd-item,
+html[data-theme="night"] .champ-dd-item{color:#f4fff9!important;background:#0b1915!important}
+html[data-theme="neon"] .champ-dd-item:hover,
+html[data-theme="night"] .champ-dd-item:hover{background:#10231e!important}
+html[data-theme="neon"] #adm-champ-show,
+html[data-theme="night"] #adm-champ-show{background:rgba(0,245,160,.10)!important;color:#f4fff9!important;border:1px solid rgba(0,245,160,.22)}
+
 </style>
 </head>
 <body>
@@ -1529,6 +1542,66 @@ function getStageMult(stage){
   return 1;
 }
 
+function isConcreteTeamName(name){
+  const n=String(name||'').trim();
+  if(!n)return false;
+  return !/^(tbd|to be decided|winner|runner|1st|2nd|w\d+|l\d+|ทีม|รอ|待定|-|—)$/i.test(n);
+}
+function getMatchWinnerTeam(m){
+  if(!m||!isConcreteTeamName(m.team1)||!isConcreteTeamName(m.team2))return '';
+  if(m.score1===''||m.score2==='')return '';
+  const s1=+m.score1,s2=+m.score2;
+  if(Number.isNaN(s1)||Number.isNaN(s2)||s1===s2)return '';
+  return s1>s2?m.team1:m.team2;
+}
+function getStageRank(stage){
+  const s=normalizeStage(stage);
+  if(['final','finals','championship'].includes(s))return 6;
+  if(['sf','semifinal','semifinals','semi','semis'].includes(s))return 5;
+  if(['qf','quarterfinal','quarterfinals','quarter','quarters'].includes(s))return 4;
+  if(['r16','roundof16','ro16','last16'].includes(s))return 3;
+  if(['r32','roundof32','ro32','last32'].includes(s))return 2;
+  return 1;
+}
+function getAliveChampionTeams(){
+  const concrete=allMatches.filter(m=>isConcreteTeamName(m.team1)&&isConcreteTeamName(m.team2));
+  const finalMs=concrete.filter(m=>getStageRank(m.stage)===6);
+  const finalWinner=finalMs.map(getMatchWinnerTeam).find(Boolean);
+  if(finalWinner)return [finalWinner];
+
+  let bestRank=0,best=[];
+  concrete.forEach(m=>{
+    const r=getStageRank(m.stage);
+    if(r>bestRank){bestRank=r;best=[];}
+    if(r===bestRank)best.push(m.team1,m.team2);
+  });
+  const uniq=[...new Set(best)].filter(isConcreteTeamName);
+  if(uniq.length)return uniq.sort((a,b)=>a.localeCompare(b));
+  return TEAMS.map(t=>t.name).sort((a,b)=>a.localeCompare(b));
+}
+function getAliveChampionTeamObjs(){
+  const names=getAliveChampionTeams();
+  return names.map(n=>TEAMS.find(t=>t.name===n)||{name:n});
+}
+function isValidChampionResultPick(name){
+  const n=String(name||'').trim();
+  if(!n)return true;
+  return getAliveChampionTeams().includes(n);
+}
+function getFinalCumulativeBonusForPlayer(pl){
+  const cr=settings['champion_result']||'',sr=settings['scorer_result']||'';
+  let b=0;
+  if(cr&&pl.champ===cr)b+=10;
+  if(sr&&pl.scorer===sr)b+=10;
+  return b;
+}
+function shouldApplyFinalBonusToTrend(doneGDs){
+  if(!(settings['champion_result']||settings['scorer_result']))return false;
+  const finalMs=allMatches.filter(m=>getStageRank(m.stage)===6);
+  if(finalMs.length)return finalMs.every(m=>m.score1!==''&&m.score2!=='');
+  return doneGDs.length&&doneGDs.length===getGDs().length;
+}
+
 // ── BONUS STATUS ───────────────────────────────────────────────
 function getBonusStatus(){
   const now=new Date();
@@ -2168,7 +2241,8 @@ function renderAnalytics(){
       ms.forEach(m=>{const pred=allPreds.find(p=>p.match_id===m.match_id&&p.player_name===pl.name);const sc=calcPts(pred,m);if(sc===null){predictedAll=false;allExact=false;return;}const mult=getStageMult(m.stage);pts+=sc*mult;if(sc===3)exCnt++;else allExact=false;});
       if(ms.length>=3&&predictedAll&&allExact&&exCnt===ms.length)pts*=2;cum+=pts;return cum;});
     const penalty=pl.bonus_penalty||0;
-    const adjusted=data.map(v=>v-penalty);
+    const finalBonus=shouldApplyFinalBonusToTrend(doneGDs)?getFinalCumulativeBonusForPlayer(pl):0;
+    const adjusted=data.map((v,idx)=>v-penalty+(idx===data.length-1?finalBonus:0));
     return{label:pl.name,data:adjusted,borderColor:colors[i%colors.length],backgroundColor:'transparent',tension:.3,pointRadius:2};})};
   if(chartLine)chartLine.destroy();
   chartLine=new Chart(document.getElementById('chart-line').getContext('2d'),{type:'line',data:lineData,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:9},boxWidth:10}}},scales:{y:{beginAtZero:true}}}});
@@ -2188,7 +2262,11 @@ function renderAnalytics(){
           if(ms.length>=3&&pAll&&aEx&&exC===ms.length)pts*=2;scores[p2.name]+=pts;
         });
       });
-      gamePlayers().forEach(p2=>{scores[p2.name]-=(p2.bonus_penalty||0);});
+      const applyFinalBonus=shouldApplyFinalBonusToTrend(gdSlice)&&idx===doneGDs.length-1;
+      gamePlayers().forEach(p2=>{
+        scores[p2.name]-=(p2.bonus_penalty||0);
+        if(applyFinalBonus)scores[p2.name]+=getFinalCumulativeBonusForPlayer(p2);
+      });
       const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
       const myIdx=sorted.findIndex(([n])=>n===pl.name);
       const myScore=sorted[myIdx]?.[1]??0;
@@ -2381,9 +2459,10 @@ function renderAdmin(){
     <label style="font-size:12px;font-weight:700;color:#33503f;display:block;margin-bottom:4px">ทีมแชมป์จริง</label>
     <div style="position:relative">
       <input class="admin-input" id="adm-champ-inp" placeholder="🔍 พิมชื่อทีม..." value="${settings['champion_result']||''}" autocomplete="off" style="margin-bottom:4px">
-      <div id="adm-champ-dd" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--gold);border-radius:var(--r-sm);max-height:160px;overflow-y:auto;z-index:50;box-shadow:var(--shadow);display:none"></div>
+      <div id="adm-champ-dd" class="champ-dd admin-champ-dd"></div>
     </div>
     <div id="adm-champ-show" style="margin-bottom:8px;padding:7px 12px;background:#fffbeb;border-radius:8px;font-size:13px;font-weight:600;color:var(--pitch);display:${settings['champion_result']?'block':'none'}">${settings['champion_result']?`${flagImg(settings['champion_result'],20)||''} ${settings['champion_result']}`||'':''}</div>
+    <div class="admin-result-lock-note" style="margin:6px 0 10px">Dropdown จะแสดงเฉพาะทีมที่ยังอยู่ในรอบล่าสุดของ bracket: R32→32, R16→16, QF→8, SF→4, Final→2 และหลังบันทึกผล Final จะเหลือทีมแชมป์เท่านั้น</div>
     <label style="font-size:12px;font-weight:700;color:#33503f;display:block;margin-bottom:4px">ดาวซัลโวจริง</label>
     <input class="admin-input" id="adm-scorer" value="${settings['scorer_result']||''}" placeholder="ชื่อนักเตะ">
     <button class="btn-sm" id="btn-save-settings">บันทึก</button>
@@ -2462,21 +2541,28 @@ function renderAdmin(){
   admChampSelected=settings['champion_result']||'';
   const admInp=document.getElementById('adm-champ-inp');
   const admDD=document.getElementById('adm-champ-dd');
+  let renderAdmChampOptions=()=>{};
   if(admInp&&admDD){
-    admInp.addEventListener('input',()=>{
-      const q=admInp.value.toLowerCase().replace(/[\u{1F1E0}-\u{1F1FF}\u{1F3F4}]/gu,'').trim();
-      if(!q){admDD.style.display='none';return;}
-      const f=TEAMS.filter(t=>t.name.toLowerCase().includes(q)).slice(0,8);
-      if(!f.length){admDD.style.display='none';return;}
-      admDD.innerHTML=f.map(t=>`<div style="padding:8px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px" onmousedown="selectAdmChamp('${t.name.replace(/'/g,"\\'")}')"><span>${flagImg(t.name,20)}</span>${t.name}</div>`).join('');
+    renderAdmChampOptions=(query='')=>{
+      const q=String(query||'').toLowerCase().replace(/[\u{1F1E0}-\u{1F1FF}\u{1F3F4}]/gu,'').trim();
+      const f=getAliveChampionTeamObjs().filter(t=>!q||t.name.toLowerCase().includes(q)).slice(0,12);
+      if(!f.length){admDD.innerHTML='<div class="champ-dd-item" style="color:var(--muted);cursor:default">ไม่พบทีมที่เลือกได้ในรอบล่าสุด</div>';admDD.style.display='block';return;}
+      admDD.innerHTML=f.map(t=>`<div class="champ-dd-item" onmousedown="selectAdmChamp('${t.name.replace(/'/g,"\\'")}')"><span>${flagImg(t.name,20)}</span>${t.name}</div>`).join('');
       admDD.style.display='block';
-    });
+    };
+    admInp.addEventListener('focus',()=>renderAdmChampOptions(admInp.value));
+    admInp.addEventListener('input',()=>renderAdmChampOptions(admInp.value));
     document.addEventListener('click',e=>{if(!e.target.closest('#adm-champ-inp')&&!e.target.closest('#adm-champ-dd'))admDD.style.display='none';});
   }
 
   document.getElementById('btn-save-settings').onclick=async()=>{
     const champ=admChampSelected||document.getElementById('adm-champ-inp')?.value.trim()||'';
     const scorer=document.getElementById('adm-scorer').value.trim();
+    if(champ&&!isValidChampionResultPick(champ)){
+      toast('ทีมนี้ไม่ได้อยู่ในรอบล่าสุดของ bracket');
+      renderAdmChampOptions(champ);
+      return;
+    }
     try{
       await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'settings',champion_result:champ,scorer_result:scorer})});
       settings['champion_result']=champ;settings['scorer_result']=scorer;
