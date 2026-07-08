@@ -364,7 +364,7 @@ html[data-theme="night"] .admin-input option{background:#10231e;color:#f4fff9}
 .rules-list{font-size:12.5px;line-height:1.75;color:#334155;padding-left:17px}
 .rules-list li{margin-bottom:2px}
 .rules-note{font-size:12px;line-height:1.65;background:#f8faf7;border:1px solid #e7eee5;border-radius:10px;padding:9px 10px;color:#475569}
-.official-link-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.official-link-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:8px}
 .official-link-row a,.official-link-row button{display:flex;align-items:center;justify-content:center;text-decoration:none;border:1.5px solid #d8e0d6;border-radius:10px;padding:10px 8px;color:var(--pitch);font-family:var(--display);font-size:12px;font-weight:800;background:#fbfdfb;cursor:pointer}
 @media(max-width:380px){.hero-link{font-size:10.5px;padding:6px 8px}.official-link-row{grid-template-columns:1fr}}
 
@@ -922,7 +922,7 @@ html[data-theme="night"] #adm-champ-show{background:rgba(0,245,160,.10)!importan
     <div class="hero-links" aria-label="Official links">
       <button type="button" class="hero-link" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=&wtw-filter=ALL')">📅 Fixtures</button>
       <button type="button" class="hero-link" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings')">🏆 Standings</button>
-      <button type="button" class="hero-link" onclick="openExternalLink('https://www.espn.co.uk/football/stats/_/league/fifa.world')">⚽ Top Scorers</button>
+      <button type="button" class="hero-link" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/statistics/player-statistics')">⚽ Top Scorers</button>
       <button type="button" class="hero-link rules" onclick="openRulesModal()">📖 Rules / FAQ</button>
       <button type="button" class="hero-link theme-trigger" onclick="openThemeModal()" aria-label="Theme settings">⚙️</button>
     </div>
@@ -955,8 +955,9 @@ html[data-theme="night"] #adm-champ-show{background:rgba(0,245,160,.10)!importan
         <div class="official-link-row">
           <button type="button" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=&wtw-filter=ALL')">📅 Match & Fixtures</button>
           <button type="button" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings')">🏆 FIFA Standings</button>
+          <button type="button" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/statistics/player-statistics')">⚽ Top Goal Scorers</button>
         </div>
-        <div class="rules-note" style="margin-top:8px">Top Goal Scorer จะเพิ่มลิงก์ภายหลังเมื่อ FIFA เปิดหน้าข้อมูลอย่างเป็นทางการ</div>
+        <div class="rules-note" style="margin-top:8px">Top Goal Scorer และการตัดสิน Golden Boot ให้อิงข้อมูล/อันดับอย่างเป็นทางการจาก FIFA</div>
       </div>
       <div class="rules-section">
         <h4>⏰ Prediction Deadline</h4>
@@ -1753,7 +1754,7 @@ function renderPredict(){
       <div class="bonus-row">
         <span class="bonus-label">🏆 ทายแชมป์ <span class="bonus-pts-tag">+10 แต้ม</span></span>
         <div style="position:relative">
-          <input class="bonus-input" id="b-champ-inp" placeholder="🔍 พิมชื่อทีม..." value="${cv||''}" autocomplete="off" ${inputDis}>
+          <input class="bonus-input" id="b-champ-inp" placeholder="🏆 เลือกทีมแชมป์..." value="${cv||''}" autocomplete="off" ${inputDis}>
           <div class="champ-dd" id="b-champ-dd"></div>
         </div>
         <div class="champ-show" id="b-champ-show">${cv||''}</div>
@@ -2466,7 +2467,7 @@ function renderAdmin(){
     <h3>🏆 ผลแชมป์ / ดาวซัลโว</h3>
     <label style="font-size:12px;font-weight:700;color:#33503f;display:block;margin-bottom:4px">ทีมแชมป์จริง</label>
     <div style="position:relative">
-      <input class="admin-input" id="adm-champ-inp" placeholder="🔍 พิมชื่อทีม..." value="${settings['champion_result']||''}" autocomplete="off" style="margin-bottom:4px">
+      <input class="admin-input" id="adm-champ-inp" placeholder="🏆 เลือกทีมแชมป์..." value="${settings['champion_result']||''}" autocomplete="off" style="margin-bottom:4px">
       <div id="adm-champ-dd" class="champ-dd admin-champ-dd"></div>
     </div>
     <div id="adm-champ-show" style="margin-bottom:8px;padding:7px 12px;background:#fffbeb;border-radius:8px;font-size:13px;font-weight:600;color:var(--pitch);display:${settings['champion_result']?'block':'none'}">${settings['champion_result']?`${flagImg(settings['champion_result'],20)||''} ${settings['champion_result']}`||'':''}</div>
