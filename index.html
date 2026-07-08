@@ -364,7 +364,7 @@ html[data-theme="night"] .admin-input option{background:#10231e;color:#f4fff9}
 .rules-list{font-size:12.5px;line-height:1.75;color:#334155;padding-left:17px}
 .rules-list li{margin-bottom:2px}
 .rules-note{font-size:12px;line-height:1.65;background:#f8faf7;border:1px solid #e7eee5;border-radius:10px;padding:9px 10px;color:#475569}
-.official-link-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:8px}
+.official-link-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .official-link-row a,.official-link-row button{display:flex;align-items:center;justify-content:center;text-decoration:none;border:1.5px solid #d8e0d6;border-radius:10px;padding:10px 8px;color:var(--pitch);font-family:var(--display);font-size:12px;font-weight:800;background:#fbfdfb;cursor:pointer}
 @media(max-width:380px){.hero-link{font-size:10.5px;padding:6px 8px}.official-link-row{grid-template-columns:1fr}}
 
@@ -840,6 +840,42 @@ html[data-theme="night"] .champ-dd-item:hover{background:#10231e!important}
 html[data-theme="neon"] #adm-champ-show,
 html[data-theme="night"] #adm-champ-show{background:rgba(0,245,160,.10)!important;color:#f4fff9!important;border:1px solid rgba(0,245,160,.22)}
 
+
+
+/* PLAYER PREDICTION REPORT */
+.lb-row.clickable{cursor:pointer;position:relative;transition:transform .12s,background .12s}
+.lb-row.clickable:active{transform:scale(.992)}
+.lb-dna{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 8px;border-radius:999px;background:#f8faf7;border:1px solid #e6eee4;color:#33503f;font-size:10.5px;font-weight:800;line-height:1;max-width:max-content}
+.lb-tap-hint{font-size:10.5px;color:var(--muted);margin-left:5px;font-weight:600}
+html[data-theme="night"] .lb-dna,html[data-theme="neon"] .lb-dna{background:rgba(255,255,255,.045);border-color:rgba(0,245,160,.18);color:#eafff5}
+.report-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1300;display:none;align-items:flex-end;justify-content:center;padding:0 10px 10px}
+.report-modal.open{display:flex}
+.report-sheet{width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:var(--modal-bg,#fff);color:var(--ink);border-radius:22px 22px 16px 16px;border:1px solid var(--border,#eaefe8);box-shadow:0 -10px 60px rgba(0,0,0,.35);padding:14px 14px 18px;-webkit-overflow-scrolling:touch}
+.report-grabber{width:44px;height:5px;border-radius:999px;background:#cbd5c8;margin:0 auto 10px;opacity:.75}
+.report-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border,#eaefe8)}
+.report-title{font-family:var(--display);font-size:18px;font-weight:900;line-height:1.25;color:var(--pitch)}
+.report-sub{font-size:12px;color:var(--muted);font-weight:700;margin-top:3px}
+.report-close{width:34px;height:34px;border-radius:50%;border:none;background:var(--soft-card,#f1f5f0);color:var(--muted);font-size:22px;line-height:1;cursor:pointer;flex-shrink:0}
+.report-hero{margin:12px 0;padding:14px;border-radius:16px;background:linear-gradient(135deg,#fff8df,#f8fff9);border:1.5px solid #fde68a}
+.report-dna-label{font-family:var(--display);font-size:21px;font-weight:900;color:var(--pitch);line-height:1.15;margin-top:4px}
+.report-summary{font-size:13px;line-height:1.75;color:#334155;margin-top:9px}
+.report-section{background:var(--card);border:1px solid var(--border,#eaefe8);border-radius:15px;padding:12px;margin-top:10px;box-shadow:var(--shadow-sm)}
+.report-section h4{font-family:var(--display);font-size:13.5px;font-weight:900;color:#33503f;margin-bottom:9px}
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.report-stat{background:var(--soft-card,#f8faf7);border:1px solid var(--border,#e6eee4);border-radius:12px;padding:10px;text-align:center}
+.report-stat b{display:block;font-family:var(--display);font-size:18px;color:var(--pitch);line-height:1.1}
+.report-stat span{display:block;font-size:10.5px;color:var(--muted);margin-top:4px;font-weight:700}
+.report-bars{display:grid;gap:7px}.report-bar-row{display:grid;grid-template-columns:72px 1fr 42px;gap:8px;align-items:center;font-size:12px;font-weight:800;color:#334155}.report-bar-track{height:9px;background:#e8f0e6;border-radius:999px;overflow:hidden}.report-bar-fill{height:100%;background:linear-gradient(90deg,var(--pitch),var(--gold));border-radius:999px}
+.report-bullets{display:grid;gap:7px;font-size:12.5px;line-height:1.55;color:#334155}.report-bullet{display:flex;gap:7px;align-items:flex-start}.report-bullet i{font-style:normal;flex-shrink:0}
+.report-chip-row{display:flex;flex-wrap:wrap;gap:7px}.report-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:999px;background:var(--soft-card,#f8faf7);border:1px solid var(--border,#e6eee4);font-size:11.5px;font-weight:800;color:#334155}
+.report-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.report-action{border:none;border-radius:12px;padding:12px 10px;font-family:var(--display);font-size:13px;font-weight:900;cursor:pointer}.report-action.primary{background:var(--pitch);color:#fff}.report-action.secondary{background:var(--soft-card,#f1f5f0);color:var(--pitch);border:1px solid var(--border,#e6eee4)}
+.report-share-card{position:absolute;left:-9999px;top:0;width:1080px;min-height:1350px;padding:62px;background:linear-gradient(160deg,#073322,#0b5138 48%,#06120e);color:#fff;font-family:var(--thai);border-radius:0}.report-share-card h2{font-family:var(--display);font-size:62px;line-height:1;margin:0}.report-share-card .share-dna{font-family:var(--display);font-size:50px;font-weight:900;color:#ffe27a;margin-top:28px}.report-share-card .share-summary{font-size:34px;line-height:1.55;margin-top:30px;color:#eefbf4}.report-share-card .share-metrics{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:40px}.report-share-card .share-metric{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:28px;padding:28px}.report-share-card .share-metric b{display:block;font-family:var(--display);font-size:46px;color:#ffe27a}.report-share-card .share-metric span{font-size:26px;color:#dbece3}.report-share-card .share-foot{position:absolute;bottom:46px;left:62px;right:62px;font-size:28px;color:rgba(255,255,255,.72);display:flex;justify-content:space-between;align-items:center}
+html[data-theme="night"] .report-hero,html[data-theme="neon"] .report-hero{background:linear-gradient(135deg,rgba(245,197,66,.14),rgba(0,245,160,.07));border-color:rgba(245,197,66,.45)}
+html[data-theme="night"] .report-summary,html[data-theme="night"] .report-bullets,html[data-theme="night"] .report-bar-row,html[data-theme="night"] .report-chip,html[data-theme="neon"] .report-summary,html[data-theme="neon"] .report-bullets,html[data-theme="neon"] .report-bar-row,html[data-theme="neon"] .report-chip{color:#eafff5}
+html[data-theme="night"] .report-title,html[data-theme="night"] .report-dna-label,html[data-theme="night"] .report-stat b,html[data-theme="night"] .report-section h4,html[data-theme="neon"] .report-title,html[data-theme="neon"] .report-dna-label,html[data-theme="neon"] .report-stat b,html[data-theme="neon"] .report-section h4{color:var(--good)}
+html[data-theme="night"] .report-bar-track,html[data-theme="neon"] .report-bar-track{background:#193029}
+@media(max-width:380px){.report-grid{grid-template-columns:1fr}.report-actions{grid-template-columns:1fr}.report-bar-row{grid-template-columns:64px 1fr 38px}}
+
 </style>
 </head>
 <body>
@@ -922,7 +958,7 @@ html[data-theme="night"] #adm-champ-show{background:rgba(0,245,160,.10)!importan
     <div class="hero-links" aria-label="Official links">
       <button type="button" class="hero-link" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=&wtw-filter=ALL')">📅 Fixtures</button>
       <button type="button" class="hero-link" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings')">🏆 Standings</button>
-      <button type="button" class="hero-link" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/statistics/player-statistics')">⚽ Top Scorers</button>
+      <button type="button" class="hero-link" onclick="openExternalLink('https://www.espn.co.uk/football/stats/_/league/fifa.world')">⚽ Top Scorers</button>
       <button type="button" class="hero-link rules" onclick="openRulesModal()">📖 Rules / FAQ</button>
       <button type="button" class="hero-link theme-trigger" onclick="openThemeModal()" aria-label="Theme settings">⚙️</button>
     </div>
@@ -955,9 +991,8 @@ html[data-theme="night"] #adm-champ-show{background:rgba(0,245,160,.10)!importan
         <div class="official-link-row">
           <button type="button" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=&wtw-filter=ALL')">📅 Match & Fixtures</button>
           <button type="button" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings')">🏆 FIFA Standings</button>
-          <button type="button" onclick="openExternalLink('https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/statistics/player-statistics')">⚽ Top Goal Scorers</button>
         </div>
-        <div class="rules-note" style="margin-top:8px">Top Goal Scorer และการตัดสิน Golden Boot ให้อิงข้อมูล/อันดับอย่างเป็นทางการจาก FIFA</div>
+        <div class="rules-note" style="margin-top:8px">Top Goal Scorer จะเพิ่มลิงก์ภายหลังเมื่อ FIFA เปิดหน้าข้อมูลอย่างเป็นทางการ</div>
       </div>
       <div class="rules-section">
         <h4>⏰ Prediction Deadline</h4>
@@ -1084,6 +1119,15 @@ html[data-theme="night"] #adm-champ-show{background:rgba(0,245,160,.10)!importan
 </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<div class="report-modal" id="player-report-modal" onclick="if(event.target===this)closePlayerReport()">
+  <div class="report-sheet" id="player-report-sheet">
+    <div class="report-grabber"></div>
+    <div id="player-report-content"></div>
+  </div>
+</div>
+<div id="report-share-mount"></div>
+
 
 <script>
 const SHEET_ID='1L0dir3bCOSJAdRfhDPojC98HiShGQcK5ItPkPyLCmT0';
@@ -1754,7 +1798,7 @@ function renderPredict(){
       <div class="bonus-row">
         <span class="bonus-label">🏆 ทายแชมป์ <span class="bonus-pts-tag">+10 แต้ม</span></span>
         <div style="position:relative">
-          <input class="bonus-input" id="b-champ-inp" placeholder="🏆 เลือกทีมแชมป์..." value="${cv||''}" autocomplete="off" ${inputDis}>
+          <input class="bonus-input" id="b-champ-inp" placeholder="🔍 พิมชื่อทีม..." value="${cv||''}" autocomplete="off" ${inputDis}>
           <div class="champ-dd" id="b-champ-dd"></div>
         </div>
         <div class="champ-show" id="b-champ-show">${cv||''}</div>
@@ -2103,6 +2147,177 @@ function getRankChange(){
   });
   return changes;
 }
+
+function escHtml(v){return String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function predOutcome(pred){const a=+pred.s1,b=+pred.s2;return a>b?'H':a<b?'A':'D';}
+function matchOutcome(m){const a=+m.score1,b=+m.score2;return a>b?'H':a<b?'A':'D';}
+function getPredictionMajorityByMatch(mid){
+  const counts={H:0,D:0,A:0};
+  gamePreds().filter(p=>p.match_id===mid&&p.s1!==''&&p.s2!=='').forEach(p=>{counts[predOutcome(p)]++;});
+  const max=Math.max(counts.H,counts.D,counts.A);
+  if(max<=0)return null;
+  const tops=Object.keys(counts).filter(k=>counts[k]===max);
+  return tops.length===1?tops[0]:null;
+}
+function getPlayerScoreTimeline(name){
+  const gds=getGDs().filter(gd=>gdMatches(gd).some(m=>m.score1!==''&&m.score2!==''));
+  return gds.map(gd=>{const r=calcStandings(gd);const idx=r.findIndex(([n])=>n===name);return{gd,pts:idx>=0?r[idx][1].pts:0,rank:idx>=0?getDenseRanks(r)[name]:null};});
+}
+function pct(v,total){return total?Math.round(v/total*100):0;}
+function signedPct(v){return (v>0?'+':'')+v+'%';}
+function safeNum(v){return Number.isFinite(v)?v:0;}
+function getDNAFromMetrics(m){
+  if(m.currentRank===1)return{key:'Champion Mindset',emoji:'🏆',desc:'แชมป์สายเก็บงานสำคัญ'};
+  if(m.exactPct>=m.leagueExactPct+6&&m.exact>=2)return{key:'Exact Hunter',emoji:'🎯',desc:'ล่าสกอร์เป๊ะเป็นหลัก'};
+  if(m.safePct>=70)return{key:'Safe Predictor',emoji:'🛡️',desc:'เล่นตามภาพรวม เน้นเก็บแต้ม'};
+  if(m.contraPct>=45)return{key:'Risk Taker',emoji:'🎲',desc:'กล้าฉีกจากเสียงส่วนใหญ่'};
+  if(m.knockoutAcc>=m.overallAcc+12&&m.knockoutDone>=2)return{key:'Clutch Predictor',emoji:'⚡',desc:'ยิ่งรอบลึกยิ่งนิ่ง'};
+  if(m.overallAcc>=m.leagueAcc+8)return{key:'Tactical Analyst',emoji:'🧠',desc:'อ่านผลชนะ/แพ้ได้แม่นกว่าค่าเฉลี่ย'};
+  if(m.avgPredGoals>=m.leagueAvgPredGoals+.5)return{key:'Goal Fest Believer',emoji:'🔥',desc:'ชอบเกมเปิดแลกและสกอร์สูง'};
+  if(m.rankJump>0)return{key:'Momentum Rider',emoji:'📈',desc:'ฟอร์มไต่ขึ้นต่อเนื่อง'};
+  return{key:'Balanced Predictor',emoji:'⚖️',desc:'สไตล์สมดุล ไม่สุดโต่ง'};
+}
+function buildPlayerAnalysis(name){
+  const standings=calcStandings();
+  const dense=getDenseRanks(standings);
+  const row=standings.find(([n])=>n===name)||[name,{pts:0,exact:0,correct:0,wrong:0,bonus:0,penalty:0,perfectBonus:0,stageBonus:0,champ:'',scorer:''}];
+  const s=row[1];
+  const player=gamePlayers().find(p=>p.name===name)||{};
+  const completed=allMatches.filter(m=>m.score1!==''&&m.score2!=='');
+  const preds=gamePreds().filter(p=>p.player_name===name);
+  let exact=0,correct=0,wrong=0,miss=0,safe=0,contra=0,noMajor=0,predGoals=0,predCount=0,high=0,low=0,kDone=0,kGood=0,stageStats={};
+  const favScores={};const exactScores={};const teamBias={};
+  completed.forEach(m=>{
+    const pred=preds.find(p=>p.match_id===m.match_id);
+    const st=String(m.stage||'Group').trim()||'Group';
+    if(!stageStats[st])stageStats[st]={done:0,good:0,exact:0};
+    if(!pred||pred.s1===''||pred.s2===''){miss++;return;}
+    predCount++;predGoals+=+pred.s1 + +pred.s2;
+    const fs=`${pred.s1}-${pred.s2}`;favScores[fs]=(favScores[fs]||0)+1;
+    const pts=calcPts(pred,m);stageStats[st].done++;
+    if(pts===3){exact++;stageStats[st].good++;stageStats[st].exact++;exactScores[fs]=(exactScores[fs]||0)+1;}
+    else if(pts===1){correct++;stageStats[st].good++;}
+    else wrong++;
+    const maj=getPredictionMajorityByMatch(m.match_id);const po=predOutcome(pred);
+    if(maj){if(maj===po)safe++;else contra++;}else noMajor++;
+    const predTotal=+pred.s1 + +pred.s2; const realTotal=+m.score1 + +m.score2;
+    if(predTotal>realTotal)high++; else if(predTotal<realTotal)low++;
+    if(getStageMult(m.stage)>1||/r16|qf|sf|final|semi|third/i.test(String(m.stage||''))){kDone++;if(pts>0)kGood++;}
+    const pickTeam=po==='H'?m.team1:po==='A'?m.team2:null;
+    if(pickTeam)teamBias[pickTeam]=(teamBias[pickTeam]||0)+1;
+  });
+  const leagueRows=standings.map(([,x])=>x);const leagueDone=Math.max(1,leagueRows.reduce((a,x)=>a+x.exact+x.correct+x.wrong,0));
+  const leagueExactPct=pct(leagueRows.reduce((a,x)=>a+x.exact,0),leagueDone);
+  const leagueAcc=pct(leagueRows.reduce((a,x)=>a+x.exact+x.correct,0),leagueDone);
+  const leagueAvgPredGoals=(()=>{let total=0,c=0;gamePreds().forEach(p=>{const m=completed.find(x=>x.match_id===p.match_id);if(m&&p.s1!==''&&p.s2!==''){total+=+p.s1 + +p.s2;c++;}});return c?total/c:0;})();
+  const total=exact+correct+wrong;
+  const timeline=getPlayerScoreTimeline(name);
+  const ranks=timeline.map(x=>x.rank).filter(Boolean);
+  const bestRank=ranks.length?Math.min(...ranks):dense[name]||'-';
+  const worstRank=ranks.length?Math.max(...ranks):dense[name]||'-';
+  const rankJump=ranks.length>=2?ranks[0]-ranks[ranks.length-1]:0;
+  let biggestJump=0;for(let i=1;i<ranks.length;i++)biggestJump=Math.max(biggestJump,ranks[i-1]-ranks[i]);
+  const fav=Object.entries(favScores).sort((a,b)=>b[1]-a[1])[0]||['-',0];
+  const favExact=Object.entries(exactScores).sort((a,b)=>b[1]-a[1])[0]||['-',0];
+  const topTeam=Object.entries(teamBias).sort((a,b)=>b[1]-a[1])[0]||['-',0];
+  const metrics={
+    currentRank:dense[name]||'-',pts:s.pts||0,exact,correct,wrong,miss,total,
+    exactPct:pct(exact,total),correctPct:pct(correct,total),wrongPct:pct(wrong,total),overallAcc:pct(exact+correct,total),
+    leagueExactPct,leagueAcc,safePct:pct(safe,safe+contra),contraPct:pct(contra,safe+contra),
+    avgPredGoals:predCount?predGoals/predCount:0,leagueAvgPredGoals,highPct:pct(high,high+low),lowPct:pct(low,high+low),
+    knockoutAcc:pct(kGood,kDone),knockoutDone:kDone,bestRank,worstRank,rankJump,biggestJump,
+    favScore:fav[0],favScoreCount:fav[1],favExactScore:favExact[0],favExactScoreCount:favExact[1],topTeam:topTeam[0],topTeamCount:topTeam[1],
+    champ:player.champ||'',scorer:player.scorer||'',bonus:s.bonus||0,penalty:s.penalty||0,perfectBonus:s.perfectBonus||0,stageBonus:s.stageBonus||0
+  };
+  const dna=getDNAFromMetrics(metrics);
+  const champResult=settings['champion_result']||'';const scorerResult=settings['scorer_result']||'';
+  const strengths=[];const weaknesses=[];
+  if(metrics.currentRank===1)strengths.push('คว้าอันดับ 1 จากคะแนนสุทธิหลังรวมโบนัสและบทลงโทษแล้ว');
+  if(metrics.overallAcc>=metrics.leagueAcc)strengths.push(`ทายผลไม่ผิด ${metrics.overallAcc}% สูง/เท่ากับค่าเฉลี่ยลีก ${metrics.leagueAcc}%`); else weaknesses.push(`ทายผลไม่ผิด ${metrics.overallAcc}% ต่ำกว่าค่าเฉลี่ยลีก ${metrics.leagueAcc}%`);
+  if(metrics.exactPct>=metrics.leagueExactPct)strengths.push(`Exact ${metrics.exactPct}% สูง/เท่ากับค่าเฉลี่ยลีก ${metrics.leagueExactPct}%`); else weaknesses.push(`Exact ${metrics.exactPct}% ต่ำกว่าค่าเฉลี่ยลีก ${metrics.leagueExactPct}%`);
+  if(metrics.knockoutDone&&metrics.knockoutAcc>=metrics.overallAcc)strengths.push(`รอบลึกทำได้ดีขึ้น (${metrics.knockoutAcc}% ไม่ผิด)`);
+  if(metrics.contraPct>=45)strengths.push(`กล้าฉีกจาก Majority ${metrics.contraPct}% ของคู่ที่มีข้อมูลเปรียบเทียบ`);
+  if(metrics.safePct>=70)strengths.push(`เล่นเพลย์เซฟตาม Majority ${metrics.safePct}% ทำให้เก็บแต้มสม่ำเสมอ`);
+  if(metrics.penalty>0)weaknesses.push(`เสียคะแนนจากการแก้โบนัส ${metrics.penalty} แต้ม`);
+  if(metrics.wrongPct>=40)weaknesses.push(`สัดส่วน Wrong ค่อนข้างสูง (${metrics.wrongPct}%)`);
+  if(metrics.highPct>=65)weaknesses.push(`มักทายสกอร์สูงกว่าผลจริง (${metrics.highPct}%)`); else if(metrics.lowPct>=65)weaknesses.push(`มักทายสกอร์ต่ำกว่าผลจริง (${metrics.lowPct}%)`);
+  const champTxt=champResult?(metrics.champ===champResult?'แชมป์ถูก ✅':`แชมป์ผิด (${metrics.champ||'-'} → ${champResult})`):`เลือกแชมป์ ${metrics.champ||'-'} รอผลทางการ`;
+  const scorerTxt=scorerResult?(metrics.scorer===scorerResult?'ดาวซัลโวถูก ✅':`ดาวซัลโวผิด (${metrics.scorer||'-'} → ${scorerResult})`):`เลือกดาวซัลโว ${metrics.scorer||'-'} รอผลทางการ`;
+  const isFinal=!!(champResult||scorerResult||completed.some(m=>normalizeStage(m.stage)==='final'&&m.score1!==''&&m.score2!==''));
+  let summary=`${name} เป็นสาย ${dna.key} (${dna.desc}) จากข้อมูล${isFinal?'ตลอดทัวร์นาเมนต์':'ล่าสุด ณ ตอนนี้'} ได้ ${metrics.pts} แต้ม อันดับ #${metrics.currentRank} โดยมี Exact ${metrics.exactPct}% และทายผลไม่ผิดรวม ${metrics.overallAcc}% เทียบกับค่าเฉลี่ยลีก ${metrics.leagueAcc}% `;
+  summary+= metrics.safePct>=metrics.contraPct ? `สไตล์หลักคือเล่นตามภาพรวม/เพลย์เซฟ (${metrics.safePct}%) ` : `สไตล์หลักคือกล้าฉีกจากเพื่อน (${metrics.contraPct}%) `;
+  summary+=`สกอร์ที่ใช้บ่อยคือ ${metrics.favScore} และสกอร์ที่ทายเป๊ะบ่อยสุดคือ ${metrics.favExactScore}. ${champTxt}; ${scorerTxt}.`;
+  let recommendation='ครั้งหน้าควรรักษาจุดแข็งเรื่องการอ่านผู้ชนะไว้ แล้วเพิ่มความละเอียดในการเดาสกอร์เพื่อขยับ Exact ให้สูงขึ้น';
+  if(metrics.safePct>=75)recommendation='ครั้งหน้าลองกล้าเสี่ยงในเกมสูสีมากขึ้นเล็กน้อย เพราะคุณเก็บแต้มได้สม่ำเสมอแล้ว แต่การฉีกบางคู่จะช่วยสร้างช่องว่างในการลุ้นแชมป์';
+  if(metrics.contraPct>=50)recommendation='ครั้งหน้าควรเลือกจังหวะฉีกให้แม่นขึ้น ลดการสวนในเกมที่ทีมเต็งชัดมาก แล้วเก็บความเสี่ยงไว้กับคู่ที่ราคาหรือฟอร์มสูสีจริง ๆ';
+  if(metrics.highPct>=65)recommendation='ครั้งหน้าลองลดสกอร์รวมลงในบางคู่ เพราะแพตเทิร์นตอนนี้มักทายสูงกว่าผลจริง ทำให้หลุด Exact หลายครั้ง';
+  if(metrics.lowPct>=65)recommendation='ครั้งหน้าลองเปิดสกอร์ให้สูงขึ้นในคู่ที่เกมรุกเด่น เพราะแพตเทิร์นตอนนี้มักทายต่ำกว่าผลจริง';
+  if(metrics.currentRank===1)recommendation='แชมป์ครั้งนี้มาจากคะแนนสุทธิที่ครบทั้งผลแข่ง รอบพิเศษ และโบนัส ครั้งหน้ารักษาความสม่ำเสมอแบบนี้ไว้ แล้วระวังการแก้โบนัสที่อาจเสียแต้มฟรี';
+  if(metrics.currentRank===standings.length)recommendation='ครั้งหน้าลองลดความเสี่ยงลงนิดและยึดเกมที่ทีมเต็งชัดให้มากขึ้นก่อน แล้วค่อยเลือกฉีกเฉพาะแมตช์ที่มีเหตุผล จะช่วยหนีท้ายตารางได้เยอะ';
+  return{ name,dna,metrics,summary,strengths:strengths.slice(0,4),weaknesses:weaknesses.slice(0,4),recommendation,champTxt,scorerTxt,timeline,stageStats };
+}
+function renderMiniBars(a){
+  const m=a.metrics;
+  return`<div class="report-bars">
+    <div class="report-bar-row"><span>Exact</span><div class="report-bar-track"><div class="report-bar-fill" style="width:${m.exactPct}%"></div></div><span>${m.exactPct}%</span></div>
+    <div class="report-bar-row"><span>Correct</span><div class="report-bar-track"><div class="report-bar-fill" style="width:${m.correctPct}%"></div></div><span>${m.correctPct}%</span></div>
+    <div class="report-bar-row"><span>Wrong</span><div class="report-bar-track"><div class="report-bar-fill" style="width:${m.wrongPct}%"></div></div><span>${m.wrongPct}%</span></div>
+  </div>`;
+}
+function renderPlayerReport(name){
+  const a=buildPlayerAnalysis(name);const m=a.metrics;
+  const isLast=m.currentRank===calcStandings().length;
+  const rankLabel=m.currentRank===1?'🏆 Champion':(isLast?'🥄 Wooden Spoon':`#${m.currentRank}`);
+  const strengths=a.strengths.length?a.strengths:['มีข้อมูลการทายเพียงพอสำหรับสร้างโปรไฟล์เบื้องต้น'];
+  const weaknesses=a.weaknesses.length?a.weaknesses:['ยังไม่พบจุดเสียคะแนนที่เด่นชัดจากข้อมูลล่าสุด'];
+  return`<div class="report-head"><div><div class="report-title">🧬 Prediction Report</div><div class="report-sub">${escHtml(name)} · ${rankLabel} · ${m.pts} แต้ม</div></div><button class="report-close" onclick="closePlayerReport()">×</button></div>
+  <div class="report-hero">
+    <div class="report-sub">Prediction DNA</div><div class="report-dna-label">${a.dna.emoji} ${escHtml(a.dna.key)}</div>
+    <div class="report-summary">${escHtml(a.summary)}</div>
+  </div>
+  <div class="report-section"><h4>📌 สรุปตัวตนนักทาย</h4><div class="report-bullets"><div class="report-bullet"><i>✅</i><span>${escHtml(strengths[0])}</span></div><div class="report-bullet"><i>⚠️</i><span>${escHtml(weaknesses[0])}</span></div><div class="report-bullet"><i>💡</i><span>${escHtml(a.recommendation)}</span></div></div></div>
+  <div class="report-section"><h4>📊 Accuracy vs League</h4>${renderMiniBars(a)}<div class="report-grid" style="margin-top:10px"><div class="report-stat"><b>${m.overallAcc}%</b><span>ทายไม่ผิด · ลีก ${m.leagueAcc}%</span></div><div class="report-stat"><b>${m.exactPct}%</b><span>Exact · ลีก ${m.leagueExactPct}%</span></div></div></div>
+  <div class="report-section"><h4>🎮 Style</h4><div class="report-grid"><div class="report-stat"><b>${m.safePct}%</b><span>เพลย์เซฟตาม Majority</span></div><div class="report-stat"><b>${m.contraPct}%</b><span>ฉีกจากเพื่อน</span></div><div class="report-stat"><b>${m.highPct}%</b><span>ทายสูงกว่าผลจริง</span></div><div class="report-stat"><b>${m.lowPct}%</b><span>ทายต่ำกว่าผลจริง</span></div></div><div class="report-chip-row" style="margin-top:10px"><span class="report-chip">⚽ สกอร์ที่ทายบ่อย: ${escHtml(m.favScore)} (${m.favScoreCount})</span><span class="report-chip">🎯 เป๊ะบ่อยสุด: ${escHtml(m.favExactScore)} (${m.favExactScoreCount})</span><span class="report-chip">❤️ Bias: ${escHtml(m.topTeam)} (${m.topTeamCount})</span></div></div>
+  <div class="report-section"><h4>📈 Movement</h4><div class="report-grid"><div class="report-stat"><b>#${m.bestRank}</b><span>Best rank</span></div><div class="report-stat"><b>#${m.worstRank}</b><span>Worst rank</span></div><div class="report-stat"><b>${m.rankJump>0?'+'+m.rankJump:m.rankJump}</b><span>อันดับสุทธิตั้งแต่มีผล</span></div><div class="report-stat"><b>${m.biggestJump>0?'+'+m.biggestJump:'-'}</b><span>กระโดดสูงสุดใน 1 GD</span></div></div></div>
+  <div class="report-section"><h4>🏆 Bonus & Special</h4><div class="report-chip-row"><span class="report-chip">🏆 ${escHtml(a.champTxt)}</span><span class="report-chip">⚽ ${escHtml(a.scorerTxt)}</span><span class="report-chip">⚡ Perfect GD +${m.perfectBonus}</span><span class="report-chip">🏁 รอบลึก +${m.stageBonus}</span>${m.penalty?`<span class="report-chip">✂️ Penalty −${m.penalty}</span>`:''}</div></div>
+  <div class="report-section"><h4>${m.currentRank===1?'👑 คำอวยแชมป์':isLast?'🫶 คำแนะนำพิเศษ':'💡 Recommendation'}</h4><div class="report-summary" style="margin-top:0">${escHtml(m.currentRank===1?'แชมป์ครั้งนี้ไม่ได้มาเพราะฟลุค แต่เกิดจากคะแนนสุทธิที่ครบทั้งความแม่น ผลงานรอบลึก และโบนัสที่ระบบคำนวณรวมแล้วอย่างเป็นทางการ':a.recommendation)}</div></div>
+  <div class="report-actions"><button class="report-action secondary" onclick="savePlayerReportImage('${encodeURIComponent(name)}')">📥 Save PNG</button><button class="report-action primary" onclick="sharePlayerReport('${encodeURIComponent(name)}')">📤 Share</button></div>`;
+}
+function openPlayerReport(name){
+  const modal=document.getElementById('player-report-modal');const content=document.getElementById('player-report-content');
+  if(!modal||!content)return;
+  content.innerHTML=`<div class="report-head"><div><div class="report-title">Analyzing...</div><div class="report-sub">กำลังอ่าน Prediction DNA ของ ${escHtml(name)}</div></div><button class="report-close" onclick="closePlayerReport()">×</button></div><div class="report-hero"><div class="report-dna-label">🧬 Detecting pattern</div><div class="report-summary">กำลังสรุปจากคะแนน, อันดับ, bonus, penalty, perfect GD, weight รอบลึก และแพตเทิร์นการทายล่าสุด</div></div>`;
+  modal.classList.add('open');document.body.style.overflow='hidden';
+  setTimeout(()=>{content.innerHTML=renderPlayerReport(name);},450);
+}
+function closePlayerReport(){const modal=document.getElementById('player-report-modal');if(modal)modal.classList.remove('open');document.body.style.overflow='';}
+async function ensureHtml2Canvas(){
+  if(window.html2canvas)return window.html2canvas;
+  await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+  return window.html2canvas;
+}
+function buildShareCard(name){
+  const a=buildPlayerAnalysis(name),m=a.metrics;
+  return`<div class="report-share-card" id="report-share-card"><h2>${escHtml(name)}</h2><div style="font-size:34px;margin-top:14px;color:#dbece3">Rank #${m.currentRank} · ${m.pts} pts</div><div class="share-dna">${a.dna.emoji} ${escHtml(a.dna.key)}</div><div class="share-summary">${escHtml(a.summary)}</div><div class="share-metrics"><div class="share-metric"><b>${m.exactPct}%</b><span>Exact</span></div><div class="share-metric"><b>${m.overallAcc}%</b><span>Not wrong</span></div><div class="share-metric"><b>${escHtml(m.favScore)}</b><span>Favorite score</span></div><div class="share-metric"><b>#${m.bestRank}</b><span>Best rank</span></div></div><div class="share-foot"><span>Football Prediction 2026</span><span>🧬 Prediction DNA</span></div></div>`;
+}
+async function makeReportPng(name){
+  const mount=document.getElementById('report-share-mount');mount.innerHTML=buildShareCard(name);
+  const el=document.getElementById('report-share-card');
+  const html2canvas=await ensureHtml2Canvas();
+  const canvas=await html2canvas(el,{backgroundColor:null,scale:1,useCORS:true});
+  mount.innerHTML='';
+  return await new Promise(res=>canvas.toBlob(res,'image/png'));
+}
+async function savePlayerReportImage(encName){
+  const name=decodeURIComponent(encName);
+  try{toast('กำลังสร้างรูป...');const blob=await makeReportPng(name);const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`prediction-report-${name}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('บันทึกรูปแล้ว ✓');}catch(e){console.error(e);toast('สร้างรูปไม่สำเร็จ');}
+}
+async function sharePlayerReport(encName){
+  const name=decodeURIComponent(encName);
+  try{toast('กำลังเตรียมแชร์...');const blob=await makeReportPng(name);const file=new File([blob],`prediction-report-${name}.png`,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:`Prediction Report: ${name}`,text:'Football Prediction 2026'});toast('แชร์แล้ว ✓');}else{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`prediction-report-${name}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('เครื่องนี้แชร์ตรงไม่ได้ เลยดาวน์โหลดรูปให้แทน');}}catch(e){console.error(e);toast('แชร์ไม่สำเร็จ');}
+}
+function getDNABadge(name){try{const a=buildPlayerAnalysis(name);return`${a.dna.emoji} ${a.dna.key}`;}catch(e){return'🧬 Prediction DNA';}}
+
 function renderStandings(){
   const ranked=calcStandings();const medals=['🥇','🥈','🥉'];
   const playerByName={};gamePlayers().forEach(pl=>playerByName[pl.name]=pl);
@@ -2137,11 +2352,12 @@ function renderStandings(){
     if(s.perfectBonus>0)breakdown.push(`⚡ Perfect GD ×2 (+${s.perfectBonus})`);
     if(s.bonus>0)breakdown.push(`🎁 Bonus +${s.bonus}`);
     if(s.penalty>0)breakdown.push(`<span style="color:var(--bad)">✂️ แก้ Bonus ${s.penaltyCount} ครั้ง (−${s.penalty})</span>`);
-    return`<div class="lb-row${isMe?' me':''}">
+    return`<div class="lb-row clickable${isMe?' me':''}" onclick="openPlayerReport(decodeURIComponent('${encodeURIComponent(name)}'))" title="แตะเพื่อดู Prediction Report">
       <div class="rank-n${rk<=3?' r'+rk:''}">${medals[rk-1]||rk}</div>
       <div class="lb-info">
         <div class="lb-name">${isMe?'👤 ':''}<span style="${isMe?'color:var(--pitch)':''}">${name}</span></div>
         ${bonusPickHtml(pl)}
+        <div class="lb-dna">${getDNABadge(name)}<span class="lb-tap-hint">แตะดู Report</span></div>
         <div class="lb-detail">${breakdown.length?breakdown.join(' · '):'ยังไม่มีคะแนน'}</div>
       </div>
       <div class="lb-pts">${s.pts}<span> แต้ม</span></div>
@@ -2467,7 +2683,7 @@ function renderAdmin(){
     <h3>🏆 ผลแชมป์ / ดาวซัลโว</h3>
     <label style="font-size:12px;font-weight:700;color:#33503f;display:block;margin-bottom:4px">ทีมแชมป์จริง</label>
     <div style="position:relative">
-      <input class="admin-input" id="adm-champ-inp" placeholder="🏆 เลือกทีมแชมป์..." value="${settings['champion_result']||''}" autocomplete="off" style="margin-bottom:4px">
+      <input class="admin-input" id="adm-champ-inp" placeholder="🔍 พิมชื่อทีม..." value="${settings['champion_result']||''}" autocomplete="off" style="margin-bottom:4px">
       <div id="adm-champ-dd" class="champ-dd admin-champ-dd"></div>
     </div>
     <div id="adm-champ-show" style="margin-bottom:8px;padding:7px 12px;background:#fffbeb;border-radius:8px;font-size:13px;font-weight:600;color:var(--pitch);display:${settings['champion_result']?'block':'none'}">${settings['champion_result']?`${flagImg(settings['champion_result'],20)||''} ${settings['champion_result']}`||'':''}</div>
