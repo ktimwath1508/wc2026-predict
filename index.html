@@ -1523,7 +1523,7 @@ async function fetchCSV(sheet,attempt){
 async function loadAll(){
   const [m,p,pl,s]=await Promise.all([fetchCSV('matches'),fetchCSV('predictions'),fetchCSV('players'),fetchCSV('settings')]);
   allMatches=m.map(r=>({match_id:r[0],gd:r[1],gd_label:r[2],date_th:r[3],time_th:r[4],team1:r[5],team2:r[6],score1:r[7],score2:r[8],stage:r[9],group:r[10]}));
-  allPreds=p.map(r=>({match_id:r[1],player_name:r[2],s1:r[3],s2:r[4]}));
+  allPreds=p.map(r=>({match_id:r[1],player_name:r[2],s1:r[3],s2:r[4],saved_at:r[5]||r[6]||''}));
   // col: name,pin,champ,scorer,bonus_penalty,is_admin
   allPlayers=pl.map(r=>({name:r[0],pin_hash:r[1]||'',champ:r[2]||'',scorer:r[3]||'',bonus_penalty:parseInt(r[4]||'0')||0,is_admin:r[5]==='1'}));
   settings={};s.forEach(r=>{if(r[0])settings[r[0]]=r[1]||'';});
@@ -2040,7 +2040,7 @@ async function submitAllPreds(gd){
       await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({type:'prediction',match_id:mid,player_name:user,pred_score1:+s1,pred_score2:+s2})});
       const idx=allPreds.findIndex(p=>p.match_id===mid&&p.player_name===user);
-      if(idx>=0){allPreds[idx].s1=s1;allPreds[idx].s2=s2;}else allPreds.push({match_id:mid,player_name:user,s1,s2});
+      if(idx>=0){allPreds[idx].s1=s1;allPreds[idx].s2=s2;allPreds[idx].saved_at=new Date().toISOString();}else allPreds.push({match_id:mid,player_name:user,s1,s2,saved_at:new Date().toISOString()});
       removePredictionDraft(gd,mid);
       ok++;
     }catch(e){fail++;}
@@ -2167,15 +2167,30 @@ function pct(v,total){return total?Math.round(v/total*100):0;}
 function signedPct(v){return (v>0?'+':'')+v+'%';}
 function safeNum(v){return Number.isFinite(v)?v:0;}
 function getDNAFromMetrics(m){
-  if(m.currentRank===1)return{key:'Champion Mindset',emoji:'🏆',desc:'แชมป์สายเก็บงานสำคัญ'};
-  if(m.exactPct>=m.leagueExactPct+6&&m.exact>=2)return{key:'Exact Hunter',emoji:'🎯',desc:'ล่าสกอร์เป๊ะเป็นหลัก'};
-  if(m.safePct>=70)return{key:'Safe Predictor',emoji:'🛡️',desc:'เล่นตามภาพรวม เน้นเก็บแต้ม'};
-  if(m.contraPct>=45)return{key:'Risk Taker',emoji:'🎲',desc:'กล้าฉีกจากเสียงส่วนใหญ่'};
-  if(m.knockoutAcc>=m.overallAcc+12&&m.knockoutDone>=2)return{key:'Clutch Predictor',emoji:'⚡',desc:'ยิ่งรอบลึกยิ่งนิ่ง'};
-  if(m.overallAcc>=m.leagueAcc+8)return{key:'Tactical Analyst',emoji:'🧠',desc:'อ่านผลชนะ/แพ้ได้แม่นกว่าค่าเฉลี่ย'};
-  if(m.avgPredGoals>=m.leagueAvgPredGoals+.5)return{key:'Goal Fest Believer',emoji:'🔥',desc:'ชอบเกมเปิดแลกและสกอร์สูง'};
-  if(m.rankJump>0)return{key:'Momentum Rider',emoji:'📈',desc:'ฟอร์มไต่ขึ้นต่อเนื่อง'};
-  return{key:'Balanced Predictor',emoji:'⚖️',desc:'สไตล์สมดุล ไม่สุดโต่ง'};
+  // DNA ถูกจัดแบบ rule-based จากหลายมิติ ไม่ใช่ดูแค่คะแนนรวม:
+  // ความแม่น, exact, การสวน majority, แพทเทิร์นสกอร์, รอบลึก, movement, bonus และความเสี่ยง
+  if(m.currentRank===1&&m.bonus>=10)return{key:'Golden Clutch King',emoji:'👑',desc:'แชมป์ที่ปิดงานใหญ่และโบนัสได้ครบ'};
+  if(m.currentRank===1)return{key:'Champion Mindset',emoji:'🏆',desc:'แชมป์สายเก็บแต้มสุทธิได้ดีที่สุด'};
+  if(m.isLast&&m.contraPct>=45)return{key:'Chaos Entertainer',emoji:'🧨',desc:'สายสร้างสีสัน กล้าฉีกจนเกมไม่น่าเบื่อ'};
+  if(m.exactPct>=m.leagueExactPct+8&&m.exact>=3)return{key:'Exact Sniper',emoji:'🎯',desc:'ยิงสกอร์เป๊ะคมกว่าค่าเฉลี่ยชัดเจน'};
+  if(m.favExactScoreCount>=2&&m.favExactScore!=='-')return{key:`${m.favExactScore} Specialist`,emoji:'🔐',desc:'มีสกอร์ประจำตัวที่ทายแล้วเข้าเป้าบ่อย'};
+  if(m.knockoutDone>=2&&m.knockoutAcc>=m.overallAcc+15)return{key:'Clutch Predictor',emoji:'⚡',desc:'ยิ่งรอบลึกยิ่งนิ่ง'};
+  if(m.contraPct>=45&&m.contraAcc>=m.leagueAcc)return{key:'Giant Killer',emoji:'🪓',desc:'กล้าสวนและสวนแล้วมีของ'};
+  if(m.contraPct>=50)return{key:'Contrarian Artist',emoji:'🎲',desc:'ชอบฉีกจากเพื่อนมากกว่าคนทั่วไป'};
+  if(m.safePct>=75&&m.overallAcc>=m.leagueAcc)return{key:'Safe Accumulator',emoji:'🛡️',desc:'เล่นตามภาพรวมแล้วเก็บแต้มสม่ำเสมอ'};
+  if(m.safePct>=75)return{key:'Consensus Follower',emoji:'👥',desc:'เดินตามเสียงส่วนใหญ่เป็นหลัก'};
+  if(m.avgPredGoals>=m.leagueAvgPredGoals+.65||m.boldScorePct>=35)return{key:'Goal Fest Believer',emoji:'🔥',desc:'เชื่อในเกมเปิดแลกและสกอร์สูง'};
+  if(m.avgPredGoals<=m.leagueAvgPredGoals-.45||m.lowPct>=65)return{key:'Low Block Reader',emoji:'🧱',desc:'มองเกมรัดกุมและทายสกอร์ต่ำ'};
+  if(m.drawPct>=20)return{key:'Draw Merchant',emoji:'🤝',desc:'ให้ค่าน้ำหนักกับผลเสมอมากกว่าปกติ'};
+  if(m.cleanSheetPct>=35)return{key:'Clean Sheet Caller',emoji:'🧤',desc:'ชอบอ่านเกมแบบมีทีมหนึ่งปิดประตู'};
+  if(m.rankJump>=4||m.biggestJump>=3)return{key:'Comeback Rider',emoji:'📈',desc:'อันดับไต่ขึ้นแรงจากฟอร์มช่วงหลัง'};
+  if(m.overallAcc>=m.leagueAcc+8)return{key:'Tactical Analyst',emoji:'🧠',desc:'อ่านผู้ชนะได้แม่นกว่าค่าเฉลี่ยลีก'};
+  if(m.exactPct>=m.leagueExactPct+3&&m.exact>=2)return{key:'Exact Hunter',emoji:'🎯',desc:'มีเซนส์ล่าสกอร์เป๊ะ'};
+  if(m.avgLeadHours!==null&&m.avgLeadHours>=12)return{key:'Early Planner',emoji:'⏰',desc:'วางแผนและส่งคำทายเร็วกว่าคนสาย deadline'};
+  if(m.avgLeadHours!==null&&m.lateSavePct>=40)return{key:'Deadline Dribbler',emoji:'🏃',desc:'ชอบตัดสินใจโค้งสุดท้ายก่อนเตะ'};
+  if(m.avgAbsGoalError<=m.leagueAvgAbsGoalError-.35&&m.total>=3)return{key:'Score Reader',emoji:'📐',desc:'เดารูปเกมและจำนวนประตูใกล้ผลจริง'};
+  if(m.wrongPct>=45)return{key:'All-in Gambler',emoji:'🎰',desc:'เล่นแรง ผลลัพธ์มีทั้งพุ่งและพลาด'};
+  return{key:'Balanced Predictor',emoji:'⚖️',desc:'สไตล์สมดุล ไม่สุดโต่งด้านใดด้านหนึ่ง'};
 }
 function buildPlayerAnalysis(name){
   const standings=calcStandings();
@@ -2185,76 +2200,119 @@ function buildPlayerAnalysis(name){
   const player=gamePlayers().find(p=>p.name===name)||{};
   const completed=allMatches.filter(m=>m.score1!==''&&m.score2!=='');
   const preds=gamePreds().filter(p=>p.player_name===name);
-  let exact=0,correct=0,wrong=0,miss=0,safe=0,contra=0,noMajor=0,predGoals=0,predCount=0,high=0,low=0,kDone=0,kGood=0,stageStats={};
-  const favScores={};const exactScores={};const teamBias={};
+  let exact=0,correct=0,wrong=0,miss=0,safe=0,contra=0,safeGood=0,contraGood=0,noMajor=0,predGoals=0,predCount=0,high=0,low=0,kDone=0,kGood=0,drawPick=0,cleanSheetPick=0,boldScore=0,tightScore=0,absGoalErr=0,absScoreErr=0;
+  let underdogPick=0,underdogGood=0,majorityExact=0,contraExact=0,leadHoursTotal=0,leadCount=0,earlySave=0,lateSave=0;
+  const favScores={};const exactScores={};const teamBias={};const stageStats={};const bestHits=[];const painfulMisses=[];
+  const scoreTypeCounts={};
+  function addScoreType(k){scoreTypeCounts[k]=(scoreTypeCounts[k]||0)+1;}
   completed.forEach(m=>{
     const pred=preds.find(p=>p.match_id===m.match_id);
     const st=String(m.stage||'Group').trim()||'Group';
-    if(!stageStats[st])stageStats[st]={done:0,good:0,exact:0};
+    if(!stageStats[st])stageStats[st]={done:0,good:0,exact:0,pts:0};
     if(!pred||pred.s1===''||pred.s2===''){miss++;return;}
-    predCount++;predGoals+=+pred.s1 + +pred.s2;
+    const p1=+pred.s1,p2=+pred.s2,r1=+m.score1,r2=+m.score2;
+    predCount++;predGoals+=p1+p2;
+    if(pred.saved_at){const sv=new Date(pred.saved_at);const ko=thTime(m.date_th,m.time_th);if(!isNaN(sv)&&ko){const hrs=(ko-sv)/36e5;if(Number.isFinite(hrs)){leadHoursTotal+=hrs;leadCount++;if(hrs>=12)earlySave++;if(hrs<=1)lateSave++;}}}
     const fs=`${pred.s1}-${pred.s2}`;favScores[fs]=(favScores[fs]||0)+1;
-    const pts=calcPts(pred,m);stageStats[st].done++;
-    if(pts===3){exact++;stageStats[st].good++;stageStats[st].exact++;exactScores[fs]=(exactScores[fs]||0)+1;}
-    else if(pts===1){correct++;stageStats[st].good++;}
-    else wrong++;
+    const ptsBase=calcPts(pred,m);const mult=getStageMult(m.stage);const pts=(ptsBase||0)*mult;
+    stageStats[st].done++;stageStats[st].pts+=pts;
+    if(ptsBase===3){exact++;stageStats[st].good++;stageStats[st].exact++;exactScores[fs]=(exactScores[fs]||0)+1;bestHits.push({m,pred,pts,tag:'Exact'});} 
+    else if(ptsBase===1){correct++;stageStats[st].good++;bestHits.push({m,pred,pts,tag:'Correct'});} 
+    else {wrong++;painfulMisses.push({m,pred,pts});}
     const maj=getPredictionMajorityByMatch(m.match_id);const po=predOutcome(pred);
-    if(maj){if(maj===po)safe++;else contra++;}else noMajor++;
-    const predTotal=+pred.s1 + +pred.s2; const realTotal=+m.score1 + +m.score2;
+    if(maj){
+      if(maj===po){safe++;if(ptsBase>0)safeGood++;if(ptsBase===3)majorityExact++;}
+      else{contra++;if(ptsBase>0)contraGood++;if(ptsBase===3)contraExact++;}
+    }else noMajor++;
+    const realOut=matchOutcome(m);
+    if(maj&&po!==maj){underdogPick++;if(ptsBase>0)underdogGood++;}
+    const predTotal=p1+p2,realTotal=r1+r2;
     if(predTotal>realTotal)high++; else if(predTotal<realTotal)low++;
-    if(getStageMult(m.stage)>1||/r16|qf|sf|final|semi|third/i.test(String(m.stage||''))){kDone++;if(pts>0)kGood++;}
+    absGoalErr+=Math.abs(predTotal-realTotal);
+    absScoreErr+=Math.abs(p1-r1)+Math.abs(p2-r2);
+    if(po==='D'){drawPick++;addScoreType('เสมอ');}
+    if(p1===0||p2===0){cleanSheetPick++;addScoreType('มีคลีนชีต');}
+    if(predTotal>=4){boldScore++;addScoreType('สกอร์สูง');}
+    if(Math.abs(p1-p2)<=1){tightScore++;addScoreType('เกมสูสี');}
+    if(predTotal<=2)addScoreType('สกอร์ต่ำ');
+    if(getStageMult(m.stage)>1||/r16|qf|sf|final|semi|third/i.test(String(m.stage||''))){kDone++;if(ptsBase>0)kGood++;}
     const pickTeam=po==='H'?m.team1:po==='A'?m.team2:null;
     if(pickTeam)teamBias[pickTeam]=(teamBias[pickTeam]||0)+1;
   });
+
+  const total=exact+correct+wrong;
   const leagueRows=standings.map(([,x])=>x);const leagueDone=Math.max(1,leagueRows.reduce((a,x)=>a+x.exact+x.correct+x.wrong,0));
   const leagueExactPct=pct(leagueRows.reduce((a,x)=>a+x.exact,0),leagueDone);
   const leagueAcc=pct(leagueRows.reduce((a,x)=>a+x.exact+x.correct,0),leagueDone);
-  const leagueAvgPredGoals=(()=>{let total=0,c=0;gamePreds().forEach(p=>{const m=completed.find(x=>x.match_id===p.match_id);if(m&&p.s1!==''&&p.s2!==''){total+=+p.s1 + +p.s2;c++;}});return c?total/c:0;})();
-  const total=exact+correct+wrong;
+  let leagueGoalTotal=0,leaguePredCnt=0,leagueErr=0,leagueErrCnt=0;
+  const allCompletedById={};completed.forEach(m=>allCompletedById[m.match_id]=m);
+  gamePreds().forEach(p=>{const m=allCompletedById[p.match_id];if(m&&p.s1!==''&&p.s2!==''){const pg=+p.s1 + +p.s2;leagueGoalTotal+=pg;leaguePredCnt++;leagueErr+=Math.abs(pg-(+m.score1+ +m.score2));leagueErrCnt++;}});
+  const leagueAvgPredGoals=leaguePredCnt?leagueGoalTotal/leaguePredCnt:0;
+  const leagueAvgAbsGoalError=leagueErrCnt?leagueErr/leagueErrCnt:0;
   const timeline=getPlayerScoreTimeline(name);
   const ranks=timeline.map(x=>x.rank).filter(Boolean);
   const bestRank=ranks.length?Math.min(...ranks):dense[name]||'-';
   const worstRank=ranks.length?Math.max(...ranks):dense[name]||'-';
   const rankJump=ranks.length>=2?ranks[0]-ranks[ranks.length-1]:0;
-  let biggestJump=0;for(let i=1;i<ranks.length;i++)biggestJump=Math.max(biggestJump,ranks[i-1]-ranks[i]);
+  let biggestJump=0,biggestDrop=0;for(let i=1;i<ranks.length;i++){biggestJump=Math.max(biggestJump,ranks[i-1]-ranks[i]);biggestDrop=Math.max(biggestDrop,ranks[i]-ranks[i-1]);}
   const fav=Object.entries(favScores).sort((a,b)=>b[1]-a[1])[0]||['-',0];
   const favExact=Object.entries(exactScores).sort((a,b)=>b[1]-a[1])[0]||['-',0];
   const topTeam=Object.entries(teamBias).sort((a,b)=>b[1]-a[1])[0]||['-',0];
+  const scoreType=Object.entries(scoreTypeCounts).sort((a,b)=>b[1]-a[1])[0]||['-',0];
+  const bestStage=Object.entries(stageStats).filter(([,v])=>v.done>0).sort((a,b)=>pct(b[1].good,b[1].done)-pct(a[1].good,a[1].done)||b[1].pts-a[1].pts)[0]||['-',{done:0,good:0,exact:0,pts:0}];
+  const worstStage=Object.entries(stageStats).filter(([,v])=>v.done>0).sort((a,b)=>pct(a[1].good,a[1].done)-pct(b[1].good,b[1].done)||a[1].pts-b[1].pts)[0]||['-',{done:0,good:0,exact:0,pts:0}];
+  bestHits.sort((a,b)=>b.pts-a.pts||(+b.pred.s1+ +b.pred.s2)-(+a.pred.s1+ +a.pred.s2));
+  painfulMisses.sort((a,b)=>Math.abs((+b.pred.s1+ +b.pred.s2)-(+b.m.score1+ +b.m.score2))-Math.abs((+a.pred.s1+ +a.pred.s2)-(+a.m.score1+ +a.m.score2)));
+  const bestHit=bestHits[0]||null;const worstMiss=painfulMisses[0]||null;
   const metrics={
-    currentRank:dense[name]||'-',pts:s.pts||0,exact,correct,wrong,miss,total,
+    currentRank:dense[name]||'-',isLast:(dense[name]||0)===standings.length,pts:s.pts||0,exact,correct,wrong,miss,total,
     exactPct:pct(exact,total),correctPct:pct(correct,total),wrongPct:pct(wrong,total),overallAcc:pct(exact+correct,total),
-    leagueExactPct,leagueAcc,safePct:pct(safe,safe+contra),contraPct:pct(contra,safe+contra),
+    leagueExactPct,leagueAcc,safePct:pct(safe,safe+contra),contraPct:pct(contra,safe+contra),safeAcc:pct(safeGood,safe),contraAcc:pct(contraGood,contra),
     avgPredGoals:predCount?predGoals/predCount:0,leagueAvgPredGoals,highPct:pct(high,high+low),lowPct:pct(low,high+low),
-    knockoutAcc:pct(kGood,kDone),knockoutDone:kDone,bestRank,worstRank,rankJump,biggestJump,
+    knockoutAcc:pct(kGood,kDone),knockoutDone:kDone,bestRank,worstRank,rankJump,biggestJump,biggestDrop,
     favScore:fav[0],favScoreCount:fav[1],favExactScore:favExact[0],favExactScoreCount:favExact[1],topTeam:topTeam[0],topTeamCount:topTeam[1],
-    champ:player.champ||'',scorer:player.scorer||'',bonus:s.bonus||0,penalty:s.penalty||0,perfectBonus:s.perfectBonus||0,stageBonus:s.stageBonus||0
+    champ:player.champ||'',scorer:player.scorer||'',bonus:s.bonus||0,penalty:s.penalty||0,perfectBonus:s.perfectBonus||0,stageBonus:s.stageBonus||0,
+    drawPct:pct(drawPick,predCount),cleanSheetPct:pct(cleanSheetPick,predCount),boldScorePct:pct(boldScore,predCount),tightScorePct:pct(tightScore,predCount),
+    avgAbsGoalError:predCount?absGoalErr/predCount:0,leagueAvgAbsGoalError,avgAbsScoreError:predCount?absScoreErr/predCount:0,
+    underdogPick,underdogGood,underdogAcc:pct(underdogGood,underdogPick),majorityExact,contraExact,
+    scoreType:scoreType[0],scoreTypeCount:scoreType[1],bestStage:bestStage[0],bestStageAcc:pct(bestStage[1].good,bestStage[1].done),worstStage:worstStage[0],worstStageAcc:pct(worstStage[1].good,worstStage[1].done),avgLeadHours:leadCount?leadHoursTotal/leadCount:null,earlySavePct:pct(earlySave,leadCount),lateSavePct:pct(lateSave,leadCount),
+    bestHit,worstMiss
   };
   const dna=getDNAFromMetrics(metrics);
   const champResult=settings['champion_result']||'';const scorerResult=settings['scorer_result']||'';
-  const strengths=[];const weaknesses=[];
+  const strengths=[];const weaknesses=[];const evidence=[];
   if(metrics.currentRank===1)strengths.push('คว้าอันดับ 1 จากคะแนนสุทธิหลังรวมโบนัสและบทลงโทษแล้ว');
   if(metrics.overallAcc>=metrics.leagueAcc)strengths.push(`ทายผลไม่ผิด ${metrics.overallAcc}% สูง/เท่ากับค่าเฉลี่ยลีก ${metrics.leagueAcc}%`); else weaknesses.push(`ทายผลไม่ผิด ${metrics.overallAcc}% ต่ำกว่าค่าเฉลี่ยลีก ${metrics.leagueAcc}%`);
   if(metrics.exactPct>=metrics.leagueExactPct)strengths.push(`Exact ${metrics.exactPct}% สูง/เท่ากับค่าเฉลี่ยลีก ${metrics.leagueExactPct}%`); else weaknesses.push(`Exact ${metrics.exactPct}% ต่ำกว่าค่าเฉลี่ยลีก ${metrics.leagueExactPct}%`);
   if(metrics.knockoutDone&&metrics.knockoutAcc>=metrics.overallAcc)strengths.push(`รอบลึกทำได้ดีขึ้น (${metrics.knockoutAcc}% ไม่ผิด)`);
-  if(metrics.contraPct>=45)strengths.push(`กล้าฉีกจาก Majority ${metrics.contraPct}% ของคู่ที่มีข้อมูลเปรียบเทียบ`);
+  if(metrics.contraPct>=45)strengths.push(`กล้าฉีกจาก Majority ${metrics.contraPct}% และสวนถูก ${metrics.contraAcc}%`);
   if(metrics.safePct>=70)strengths.push(`เล่นเพลย์เซฟตาม Majority ${metrics.safePct}% ทำให้เก็บแต้มสม่ำเสมอ`);
+  if(metrics.avgAbsGoalError<=metrics.leagueAvgAbsGoalError)strengths.push(`เดาจำนวนประตูรวมใกล้ผลจริงกว่า/เท่าค่าเฉลี่ยลีก`);
   if(metrics.penalty>0)weaknesses.push(`เสียคะแนนจากการแก้โบนัส ${metrics.penalty} แต้ม`);
   if(metrics.wrongPct>=40)weaknesses.push(`สัดส่วน Wrong ค่อนข้างสูง (${metrics.wrongPct}%)`);
   if(metrics.highPct>=65)weaknesses.push(`มักทายสกอร์สูงกว่าผลจริง (${metrics.highPct}%)`); else if(metrics.lowPct>=65)weaknesses.push(`มักทายสกอร์ต่ำกว่าผลจริง (${metrics.lowPct}%)`);
+  if(metrics.contraPct>=45&&metrics.contraAcc<metrics.leagueAcc)weaknesses.push(`กล้าสวนเยอะ แต่สวนถูก ${metrics.contraAcc}% ยังต่ำกว่าค่าเฉลี่ยลีก ${metrics.leagueAcc}%`);
+  if(metrics.safePct>=75&&metrics.safeAcc<metrics.leagueAcc)weaknesses.push(`ตาม Majority เยอะ แต่เกมที่ตามยังเก็บแต้มได้ไม่คมเท่าค่าเฉลี่ย`);
+  evidence.push(`DNA นี้มาจาก: Safe ${metrics.safePct}% / Contra ${metrics.contraPct}% / Exact ${metrics.exactPct}% / Avg Goals ${metrics.avgPredGoals.toFixed(1)} / Best stage ${metrics.bestStage}`);
+  if(metrics.favScoreCount>1)evidence.push(`สกอร์ลายเซ็นคือ ${metrics.favScore} ใช้ ${metrics.favScoreCount} ครั้ง`);
+  if(metrics.favExactScoreCount>0)evidence.push(`สกอร์ที่เข้าเป้าบ่อยสุดคือ ${metrics.favExactScore} (${metrics.favExactScoreCount} ครั้ง)`);
+  if(metrics.scoreType!=='-')evidence.push(`รูปแบบสกอร์ที่ชอบสุด: ${metrics.scoreType} ${metrics.scoreTypeCount} ครั้ง`);
+  if(metrics.avgLeadHours!==null)evidence.push(`จังหวะส่งคำทายเฉลี่ย ${metrics.avgLeadHours.toFixed(1)} ชม.ก่อนเตะ`);
   const champTxt=champResult?(metrics.champ===champResult?'แชมป์ถูก ✅':`แชมป์ผิด (${metrics.champ||'-'} → ${champResult})`):`เลือกแชมป์ ${metrics.champ||'-'} รอผลทางการ`;
   const scorerTxt=scorerResult?(metrics.scorer===scorerResult?'ดาวซัลโวถูก ✅':`ดาวซัลโวผิด (${metrics.scorer||'-'} → ${scorerResult})`):`เลือกดาวซัลโว ${metrics.scorer||'-'} รอผลทางการ`;
   const isFinal=!!(champResult||scorerResult||completed.some(m=>normalizeStage(m.stage)==='final'&&m.score1!==''&&m.score2!==''));
-  let summary=`${name} เป็นสาย ${dna.key} (${dna.desc}) จากข้อมูล${isFinal?'ตลอดทัวร์นาเมนต์':'ล่าสุด ณ ตอนนี้'} ได้ ${metrics.pts} แต้ม อันดับ #${metrics.currentRank} โดยมี Exact ${metrics.exactPct}% และทายผลไม่ผิดรวม ${metrics.overallAcc}% เทียบกับค่าเฉลี่ยลีก ${metrics.leagueAcc}% `;
-  summary+= metrics.safePct>=metrics.contraPct ? `สไตล์หลักคือเล่นตามภาพรวม/เพลย์เซฟ (${metrics.safePct}%) ` : `สไตล์หลักคือกล้าฉีกจากเพื่อน (${metrics.contraPct}%) `;
-  summary+=`สกอร์ที่ใช้บ่อยคือ ${metrics.favScore} และสกอร์ที่ทายเป๊ะบ่อยสุดคือ ${metrics.favExactScore}. ${champTxt}; ${scorerTxt}.`;
+  let summary=`${name} ถูกจัดเป็น ${dna.key} เพราะ ${dna.desc} จากข้อมูล${isFinal?'ตลอดทัวร์นาเมนต์':'ล่าสุด ณ ตอนนี้'} มี ${metrics.pts} แต้ม อันดับ #${metrics.currentRank}, Exact ${metrics.exactPct}% และทายไม่ผิด ${metrics.overallAcc}% เทียบกับลีก ${metrics.leagueAcc}% `;
+  summary+= metrics.safePct>=metrics.contraPct ? `ภาพรวมเล่นตาม Majority ${metrics.safePct}% ` : `ภาพรวมกล้าฉีกจาก Majority ${metrics.contraPct}% `;
+  summary+=`แพทเทิร์นสกอร์คือ Avg Goals ${metrics.avgPredGoals.toFixed(1)} ลูก, ชอบ ${metrics.scoreType}, สกอร์ที่ใช้บ่อย ${metrics.favScore}. ${champTxt}; ${scorerTxt}.`;
   let recommendation='ครั้งหน้าควรรักษาจุดแข็งเรื่องการอ่านผู้ชนะไว้ แล้วเพิ่มความละเอียดในการเดาสกอร์เพื่อขยับ Exact ให้สูงขึ้น';
   if(metrics.safePct>=75)recommendation='ครั้งหน้าลองกล้าเสี่ยงในเกมสูสีมากขึ้นเล็กน้อย เพราะคุณเก็บแต้มได้สม่ำเสมอแล้ว แต่การฉีกบางคู่จะช่วยสร้างช่องว่างในการลุ้นแชมป์';
-  if(metrics.contraPct>=50)recommendation='ครั้งหน้าควรเลือกจังหวะฉีกให้แม่นขึ้น ลดการสวนในเกมที่ทีมเต็งชัดมาก แล้วเก็บความเสี่ยงไว้กับคู่ที่ราคาหรือฟอร์มสูสีจริง ๆ';
+  if(metrics.contraPct>=50)recommendation='ครั้งหน้าควรเลือกจังหวะฉีกให้แม่นขึ้น ลดการสวนในเกมที่ทีมเต็งชัดมาก แล้วเก็บความเสี่ยงไว้กับคู่ที่ฟอร์มหรือราคาใกล้กันจริง ๆ';
   if(metrics.highPct>=65)recommendation='ครั้งหน้าลองลดสกอร์รวมลงในบางคู่ เพราะแพตเทิร์นตอนนี้มักทายสูงกว่าผลจริง ทำให้หลุด Exact หลายครั้ง';
   if(metrics.lowPct>=65)recommendation='ครั้งหน้าลองเปิดสกอร์ให้สูงขึ้นในคู่ที่เกมรุกเด่น เพราะแพตเทิร์นตอนนี้มักทายต่ำกว่าผลจริง';
+  if(metrics.drawPct>=20)recommendation='ครั้งหน้าถ้ายังชอบอ่านเกมเสมอ ให้เลือกเฉพาะคู่ที่ทรงสูสีจริง ๆ เพราะผลเสมอให้ผลตอบแทนดีแต่พลาดง่าย';
   if(metrics.currentRank===1)recommendation='แชมป์ครั้งนี้มาจากคะแนนสุทธิที่ครบทั้งผลแข่ง รอบพิเศษ และโบนัส ครั้งหน้ารักษาความสม่ำเสมอแบบนี้ไว้ แล้วระวังการแก้โบนัสที่อาจเสียแต้มฟรี';
-  if(metrics.currentRank===standings.length)recommendation='ครั้งหน้าลองลดความเสี่ยงลงนิดและยึดเกมที่ทีมเต็งชัดให้มากขึ้นก่อน แล้วค่อยเลือกฉีกเฉพาะแมตช์ที่มีเหตุผล จะช่วยหนีท้ายตารางได้เยอะ';
-  return{ name,dna,metrics,summary,strengths:strengths.slice(0,4),weaknesses:weaknesses.slice(0,4),recommendation,champTxt,scorerTxt,timeline,stageStats };
+  if(metrics.isLast)recommendation='ครั้งหน้าลองลดความเสี่ยงลงนิดและยึดเกมที่ทีมเต็งชัดให้มากขึ้นก่อน แล้วค่อยเลือกฉีกเฉพาะแมตช์ที่มีเหตุผล จะช่วยหนีท้ายตารางได้เยอะ';
+  return{ name,dna,metrics,summary,strengths:strengths.slice(0,5),weaknesses:weaknesses.slice(0,5),evidence:evidence.slice(0,5),recommendation,champTxt,scorerTxt,timeline,stageStats };
 }
 function renderMiniBars(a){
   const m=a.metrics;
@@ -2270,14 +2328,21 @@ function renderPlayerReport(name){
   const rankLabel=m.currentRank===1?'🏆 Champion':(isLast?'🥄 Wooden Spoon':`#${m.currentRank}`);
   const strengths=a.strengths.length?a.strengths:['มีข้อมูลการทายเพียงพอสำหรับสร้างโปรไฟล์เบื้องต้น'];
   const weaknesses=a.weaknesses.length?a.weaknesses:['ยังไม่พบจุดเสียคะแนนที่เด่นชัดจากข้อมูลล่าสุด'];
+  const evidence=a.evidence.length?a.evidence:['ระบบจะละเอียดขึ้นเมื่อมีผลแข่งและข้อมูลทายครบมากขึ้น'];
+  const bestHit=m.bestHit?`${m.bestHit.m.team1} ${m.bestHit.m.score1}-${m.bestHit.m.score2} ${m.bestHit.m.team2} · ทาย ${m.bestHit.pred.s1}-${m.bestHit.pred.s2} · +${m.bestHit.pts}`:'รอข้อมูลเพิ่ม';
+  const worstMiss=m.worstMiss?`${m.worstMiss.m.team1} ${m.worstMiss.m.score1}-${m.worstMiss.m.score2} ${m.worstMiss.m.team2} · ทาย ${m.worstMiss.pred.s1}-${m.worstMiss.pred.s2}`:'รอข้อมูลเพิ่ม';
   return`<div class="report-head"><div><div class="report-title">🧬 Prediction Report</div><div class="report-sub">${escHtml(name)} · ${rankLabel} · ${m.pts} แต้ม</div></div><button class="report-close" onclick="closePlayerReport()">×</button></div>
   <div class="report-hero">
     <div class="report-sub">Prediction DNA</div><div class="report-dna-label">${a.dna.emoji} ${escHtml(a.dna.key)}</div>
     <div class="report-summary">${escHtml(a.summary)}</div>
+    <div class="report-chip-row" style="margin-top:10px">${evidence.map(x=>`<span class="report-chip">${escHtml(x)}</span>`).join('')}</div>
   </div>
   <div class="report-section"><h4>📌 สรุปตัวตนนักทาย</h4><div class="report-bullets"><div class="report-bullet"><i>✅</i><span>${escHtml(strengths[0])}</span></div><div class="report-bullet"><i>⚠️</i><span>${escHtml(weaknesses[0])}</span></div><div class="report-bullet"><i>💡</i><span>${escHtml(a.recommendation)}</span></div></div></div>
-  <div class="report-section"><h4>📊 Accuracy vs League</h4>${renderMiniBars(a)}<div class="report-grid" style="margin-top:10px"><div class="report-stat"><b>${m.overallAcc}%</b><span>ทายไม่ผิด · ลีก ${m.leagueAcc}%</span></div><div class="report-stat"><b>${m.exactPct}%</b><span>Exact · ลีก ${m.leagueExactPct}%</span></div></div></div>
-  <div class="report-section"><h4>🎮 Style</h4><div class="report-grid"><div class="report-stat"><b>${m.safePct}%</b><span>เพลย์เซฟตาม Majority</span></div><div class="report-stat"><b>${m.contraPct}%</b><span>ฉีกจากเพื่อน</span></div><div class="report-stat"><b>${m.highPct}%</b><span>ทายสูงกว่าผลจริง</span></div><div class="report-stat"><b>${m.lowPct}%</b><span>ทายต่ำกว่าผลจริง</span></div></div><div class="report-chip-row" style="margin-top:10px"><span class="report-chip">⚽ สกอร์ที่ทายบ่อย: ${escHtml(m.favScore)} (${m.favScoreCount})</span><span class="report-chip">🎯 เป๊ะบ่อยสุด: ${escHtml(m.favExactScore)} (${m.favExactScoreCount})</span><span class="report-chip">❤️ Bias: ${escHtml(m.topTeam)} (${m.topTeamCount})</span></div></div>
+  <div class="report-section"><h4>📊 Accuracy vs League</h4>${renderMiniBars(a)}<div class="report-grid" style="margin-top:10px"><div class="report-stat"><b>${m.overallAcc}%</b><span>ทายไม่ผิด · ลีก ${m.leagueAcc}%</span></div><div class="report-stat"><b>${m.exactPct}%</b><span>Exact · ลีก ${m.leagueExactPct}%</span></div><div class="report-stat"><b>${m.contraAcc}%</b><span>สวน Majority แล้วถูก</span></div><div class="report-stat"><b>${m.safeAcc}%</b><span>ตาม Majority แล้วถูก</span></div></div></div>
+  <div class="report-section"><h4>🎮 Score Fingerprint</h4><div class="report-grid"><div class="report-stat"><b>${m.avgPredGoals.toFixed(1)}</b><span>ประตูรวมที่ทายเฉลี่ย · ลีก ${m.leagueAvgPredGoals.toFixed(1)}</span></div><div class="report-stat"><b>${m.avgAbsGoalError.toFixed(1)}</b><span>พลาดประตูรวมเฉลี่ย · ลีก ${m.leagueAvgAbsGoalError.toFixed(1)}</span></div><div class="report-stat"><b>${m.boldScorePct}%</b><span>ทายสกอร์สูง 4+ ลูก</span></div><div class="report-stat"><b>${m.cleanSheetPct}%</b><span>ทายมีคลีนชีต</span></div><div class="report-stat"><b>${m.drawPct}%</b><span>ทายเสมอ</span></div><div class="report-stat"><b>${m.tightScorePct}%</b><span>ทายเกมสูสี</span></div></div><div class="report-chip-row" style="margin-top:10px"><span class="report-chip">⚽ สกอร์ที่ทายบ่อย: ${escHtml(m.favScore)} (${m.favScoreCount})</span><span class="report-chip">🎯 เป๊ะบ่อยสุด: ${escHtml(m.favExactScore)} (${m.favExactScoreCount})</span><span class="report-chip">❤️ Bias: ${escHtml(m.topTeam)} (${m.topTeamCount})</span></div></div>
+  <div class="report-section"><h4>🧭 Prediction Style</h4><div class="report-grid"><div class="report-stat"><b>${m.safePct}%</b><span>เพลย์เซฟตาม Majority</span></div><div class="report-stat"><b>${m.contraPct}%</b><span>ฉีกจากเพื่อน</span></div><div class="report-stat"><b>${m.highPct}%</b><span>ทายสูงกว่าผลจริง</span></div><div class="report-stat"><b>${m.lowPct}%</b><span>ทายต่ำกว่าผลจริง</span></div></div></div>
+  <div class="report-section"><h4>🏟️ Stage Pattern</h4><div class="report-grid"><div class="report-stat"><b>${escHtml(m.bestStage)}</b><span>รอบที่เด่นสุด · ${m.bestStageAcc}% ไม่ผิด</span></div><div class="report-stat"><b>${escHtml(m.worstStage)}</b><span>รอบที่เสียคะแนน · ${m.worstStageAcc}% ไม่ผิด</span></div><div class="report-stat"><b>${m.knockoutAcc}%</b><span>รอบลึกไม่ผิด</span></div><div class="report-stat"><b>+${m.stageBonus}</b><span>แต้มเพิ่มจาก weight รอบลึก</span></div></div></div>
+  <div class="report-section"><h4>🎬 Best & Biggest Miss</h4><div class="report-bullets"><div class="report-bullet"><i>🔥</i><span>${escHtml(bestHit)}</span></div><div class="report-bullet"><i>🫣</i><span>${escHtml(worstMiss)}</span></div></div></div>
   <div class="report-section"><h4>📈 Movement</h4><div class="report-grid"><div class="report-stat"><b>#${m.bestRank}</b><span>Best rank</span></div><div class="report-stat"><b>#${m.worstRank}</b><span>Worst rank</span></div><div class="report-stat"><b>${m.rankJump>0?'+'+m.rankJump:m.rankJump}</b><span>อันดับสุทธิตั้งแต่มีผล</span></div><div class="report-stat"><b>${m.biggestJump>0?'+'+m.biggestJump:'-'}</b><span>กระโดดสูงสุดใน 1 GD</span></div></div></div>
   <div class="report-section"><h4>🏆 Bonus & Special</h4><div class="report-chip-row"><span class="report-chip">🏆 ${escHtml(a.champTxt)}</span><span class="report-chip">⚽ ${escHtml(a.scorerTxt)}</span><span class="report-chip">⚡ Perfect GD +${m.perfectBonus}</span><span class="report-chip">🏁 รอบลึก +${m.stageBonus}</span>${m.penalty?`<span class="report-chip">✂️ Penalty −${m.penalty}</span>`:''}</div></div>
   <div class="report-section"><h4>${m.currentRank===1?'👑 คำอวยแชมป์':isLast?'🫶 คำแนะนำพิเศษ':'💡 Recommendation'}</h4><div class="report-summary" style="margin-top:0">${escHtml(m.currentRank===1?'แชมป์ครั้งนี้ไม่ได้มาเพราะฟลุค แต่เกิดจากคะแนนสุทธิที่ครบทั้งความแม่น ผลงานรอบลึก และโบนัสที่ระบบคำนวณรวมแล้วอย่างเป็นทางการ':a.recommendation)}</div></div>
@@ -3001,7 +3066,7 @@ async function savePrediction(mid,s1,s2){
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({type:'prediction',match_id:mid,player_name:user,pred_score1:+s1,pred_score2:+s2})});
     const idx=allPreds.findIndex(p=>p.match_id===mid&&p.player_name===user);
-    if(idx>=0){allPreds[idx].s1=s1;allPreds[idx].s2=s2;}else allPreds.push({match_id:mid,player_name:user,s1,s2});
+    if(idx>=0){allPreds[idx].s1=s1;allPreds[idx].s2=s2;allPreds[idx].saved_at=new Date().toISOString();}else allPreds.push({match_id:mid,player_name:user,s1,s2,saved_at:new Date().toISOString()});
     const m=getMatch(mid);if(m)removePredictionDraft(m.gd,mid);
     toast('บันทึกคำทายแล้ว ✓');
     setTimeout(()=>renderPredict(),250);
