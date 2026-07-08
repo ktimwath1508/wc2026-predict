@@ -2163,6 +2163,30 @@ function getPlayerScoreTimeline(name){
   const gds=getGDs().filter(gd=>gdMatches(gd).some(m=>m.score1!==''&&m.score2!==''));
   return gds.map(gd=>{const r=calcStandings(gd);const idx=r.findIndex(([n])=>n===name);return{gd,pts:idx>=0?r[idx][1].pts:0,rank:idx>=0?getDenseRanks(r)[name]:null};});
 }
+function getLeaderHistoryForPlayer(name){
+  const gds=getGDs().filter(gd=>gdMatches(gd).some(m=>m.score1!==''&&m.score2!==''));
+  let leaderGDs=0,streak=0,longestLeadStreak=0;
+  gds.forEach(gd=>{
+    const dense=getDenseRanks(calcStandings(gd));
+    if(dense[name]===1){leaderGDs++;streak++;longestLeadStreak=Math.max(longestLeadStreak,streak);}else{streak=0;}
+  });
+  return{leaderGDs,longestLeadStreak};
+}
+let playerAnalysisCache={key:'',data:{}};
+function getAnalysisCacheKey(){
+  try{
+    const matches=(allMatches||[]).map(m=>[m.match_id,m.gd,m.stage,m.score1,m.score2]).join('|');
+    const players=gamePlayers().map(p=>[p.name,p.champ,p.scorer,p.bonus_penalty||0].join(':')).join('|');
+    const preds=gamePreds().map(p=>[p.player_name,p.match_id,p.s1,p.s2,p.saved_at||''].join(':')).join('|');
+    return [settings['champion_result']||'',settings['scorer_result']||'',matches,players,preds].join('§');
+  }catch(e){return String(Date.now());}
+}
+function getPlayerAnalysis(name){
+  const key=getAnalysisCacheKey();
+  if(playerAnalysisCache.key!==key)playerAnalysisCache={key,data:{}};
+  if(!playerAnalysisCache.data[name])playerAnalysisCache.data[name]=buildPlayerAnalysis(name);
+  return playerAnalysisCache.data[name];
+}
 function pct(v,total){return total?Math.round(v/total*100):0;}
 function signedPct(v){return (v>0?'+':'')+v+'%';}
 function safeNum(v){return Number.isFinite(v)?v:0;}
@@ -2362,6 +2386,9 @@ function buildPlayerAnalysis(name){
   bestHits.sort((a,b)=>b.pts-a.pts||(+b.pred.s1+ +b.pred.s2)-(+a.pred.s1+ +a.pred.s2));
   painfulMisses.sort((a,b)=>Math.abs((+b.pred.s1+ +b.pred.s2)-(+b.m.score1+ +b.m.score2))-Math.abs((+a.pred.s1+ +a.pred.s2)-(+a.m.score1+ +a.m.score2)));
   const bestHit=bestHits[0]||null;const worstMiss=painfulMisses[0]||null;
+  const leaderHistory=getLeaderHistoryForPlayer(name);
+  const leaderGDs=leaderHistory.leaderGDs;
+  const longestLeadStreak=leaderHistory.longestLeadStreak;
   const metrics={
     currentRank:dense[name]||'-',isLast:(dense[name]||0)===standings.length,pts:s.pts||0,rawPts,rawRank,exactLeader,leaderGDs,longestLeadStreak,exact,correct,wrong,miss,total,
     exactPct:pct(exact,total),correctPct:pct(correct,total),wrongPct:pct(wrong,total),overallAcc:pct(exact+correct,total),
@@ -2440,7 +2467,7 @@ function renderMiniBars(a){
   </div>`;
 }
 function renderPlayerReport(name){
-  const a=buildPlayerAnalysis(name);const m=a.metrics;
+  const a=getPlayerAnalysis(name);const m=a.metrics;
   const isLast=m.currentRank===calcStandings().length;
   const rankLabel=m.currentRank===1?'🏆 Champion':(isLast?'🥄 Wooden Spoon':`#${m.currentRank}`);
   const strengths=a.strengths.length?a.strengths:['มีข้อมูลการทายเพียงพอสำหรับสร้างโปรไฟล์เบื้องต้น'];
@@ -2484,7 +2511,7 @@ async function ensureHtml2Canvas(){
   return window.html2canvas;
 }
 function buildShareCard(name){
-  const a=buildPlayerAnalysis(name),m=a.metrics;
+  const a=getPlayerAnalysis(name),m=a.metrics;
   return`<div class="report-share-card" id="report-share-card"><h2>${escHtml(name)}</h2><div style="font-size:34px;margin-top:14px;color:#dbece3">Rank #${m.currentRank} · ${m.pts} pts</div><div class="share-dna">${a.dna.emoji} ${escHtml(a.dna.key)}</div><div class="share-summary">${escHtml(a.summary)}</div><div class="share-metrics"><div class="share-metric"><b>${m.exactPct}%</b><span>Exact</span></div><div class="share-metric"><b>${m.overallAcc}%</b><span>Not wrong</span></div><div class="share-metric"><b>${escHtml(m.favScore)}</b><span>Favorite score</span></div><div class="share-metric"><b>#${m.bestRank}</b><span>Best rank</span></div></div><div class="share-foot"><span>Football Prediction 2026</span><span>🧬 Dynamic Prediction DNA</span></div></div>`;
 }
 async function makeReportPng(name){
@@ -2503,7 +2530,7 @@ async function sharePlayerReport(encName){
   const name=decodeURIComponent(encName);
   try{toast('กำลังเตรียมแชร์...');const blob=await makeReportPng(name);const file=new File([blob],`prediction-report-${name}.png`,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:`Prediction Report: ${name}`,text:'Football Prediction 2026'});toast('แชร์แล้ว ✓');}else{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`prediction-report-${name}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('เครื่องนี้แชร์ตรงไม่ได้ เลยดาวน์โหลดรูปให้แทน');}}catch(e){console.error(e);toast('แชร์ไม่สำเร็จ');}
 }
-function getDNABadge(name){try{const a=buildPlayerAnalysis(name);return`${a.dna.emoji} ${a.dna.key}`;}catch(e){return'🧬 Prediction DNA';}}
+function getDNABadge(name){try{const a=getPlayerAnalysis(name);return`${a.dna.emoji} ${a.dna.key}`;}catch(e){return'🧬 Prediction DNA';}}
 
 function renderStandings(){
   const ranked=calcStandings();const medals=['🥇','🥈','🥉'];
