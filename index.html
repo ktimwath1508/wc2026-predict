@@ -2160,8 +2160,40 @@ function getPredictionMajorityByMatch(mid){
   return tops.length===1?tops[0]:null;
 }
 function getPlayerScoreTimeline(name){
-  const gds=getGDs().filter(gd=>gdMatches(gd).some(m=>m.score1!==''&&m.score2!==''));
-  return gds.map(gd=>{const r=calcStandings(gd);const idx=r.findIndex(([n])=>n===name);return{gd,pts:idx>=0?r[idx][1].pts:0,rank:idx>=0?getDenseRanks(r)[name]:null};});
+  // Single source with Rank Movement chart: ordinary rank by cumulative score at each closed GD.
+  // Same points = same rank; next rank is based on number of players ahead, matching the chart y-axis.
+  const doneGDs=getGDs().filter(gd=>gdMatches(gd).some(m=>m.score1!==''&&m.score2!==''));
+  return doneGDs.map((gd,idx)=>{
+    const gdSlice=doneGDs.slice(0,idx+1);
+    const scores={};gamePlayers().forEach(p=>{scores[p.name]=0;});
+    gdSlice.forEach(g=>{
+      const ms=gdMatches(g).filter(m=>m.score1!==''&&m.score2!=='');
+      gamePlayers().forEach(p2=>{
+        let pts=0,pAll=true,aEx=true,exC=0;
+        ms.forEach(m=>{
+          const pred=allPreds.find(pr=>pr.match_id===m.match_id&&pr.player_name===p2.name);
+          const sc=calcPts(pred,m);
+          if(sc===null){pAll=false;aEx=false;return;}
+          const mult=getStageMult(m.stage);
+          pts+=sc*mult;
+          if(sc===3)exC++;else aEx=false;
+        });
+        if(ms.length>=3&&pAll&&aEx&&exC===ms.length)pts*=2;
+        scores[p2.name]+=pts;
+      });
+    });
+    const applyFinalBonus=shouldApplyFinalBonusToTrend(doneGDs.slice(0,idx+1))&&idx===doneGDs.length-1;
+    gamePlayers().forEach(p2=>{
+      scores[p2.name]-=(p2.bonus_penalty||0);
+      if(applyFinalBonus)scores[p2.name]+=getFinalCumulativeBonusForPlayer(p2);
+    });
+    const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+    const my=sorted.find(([n])=>n===name);
+    if(!my)return{gd,pts:0,rank:null};
+    const myScore=my[1];
+    const rank=sorted.filter(([,v])=>v>myScore).length+1;
+    return{gd,pts:myScore,rank};
+  });
 }
 function getLeaderHistoryForPlayer(name){
   const gds=getGDs().filter(gd=>gdMatches(gd).some(m=>m.score1!==''&&m.score2!==''));
@@ -2233,9 +2265,9 @@ function getDNAFromMetrics(m){
   add('Consistency Master','📌',45+Math.max(0,accGap)*1.4+(m.bestRank<=5&&m.worstRank<=8?18:0)+(m.wrongPct<35?8:0),
     'ผลงานไม่เหวี่ยงมาก รักษาอันดับและแต้มได้สม่ำเสมอ',
     `Best rank #${m.bestRank}, worst rank #${m.worstRank}, wrong ${m.wrongPct}%`,'accuracy');
-  add('Safe Accumulator','🛡️',m.safePct>=70?48+(m.safePct-70)*1.0+(m.safeAcc>=m.leagueAcc?10:-8):24,
-    'เน้นตามภาพรวมของลีกและสะสมแต้มจากเกมที่ควรได้',
-    `ตาม Majority ${m.safePct}%, safe accuracy ${m.safeAcc}%`,'style');
+  add('Safe Accumulator','🛡️',(m.safePct>=82&&m.safeAcc>=m.leagueAcc)?62+(m.safePct-82)*1.1+(m.safeAcc-m.leagueAcc)*0.8:20,
+    'เน้นตามภาพรวมของลีกและสะสมแต้มจากเกมที่ควรได้จริง ไม่ใช่แค่ตามเพื่อนบ่อย',
+    `ตาม Majority ${m.safePct}%, safe accuracy ${m.safeAcc}% vs league ${m.leagueAcc}%`,'style');
 
   // 3) Risk / contra — สวนจริงและมีผลจริง ถึงจะได้เป็น Primary
   add('Contrarian Predictor','🎲',m.contraPct>=42?55+(m.contraPct-42)*1.25+(champRare?10:0):18,
@@ -2293,20 +2325,24 @@ function getDNAFromMetrics(m){
   pool.forEach(x=>{
     if(x.family==='score' && Math.abs(goalGap)<0.45 && x.key.indexOf('Specialist')<0 && x.key!=='Score Reader')x.score-=18;
     if(x.family==='timing' && m.avgLeadHours!==null && Math.max(m.earlySavePct,m.lateSavePct)<60)x.score-=24;
-    if(x.family==='risk' && m.contraPct<40 && !champRare)x.score-=20;
+    if(x.family==='risk' && m.contraPct<40)x.score-=24;
+    if(x.family==='style' && (m.safePct<82 || m.safeAcc<m.leagueAcc+3))x.score-=18;
     if(x.family==='accuracy' && accGap<0)x.score-=14;
     if(x.family==='precision' && exactGap<0 && !m.exactLeader)x.score-=18;
     if(x.family==='rank' && m.currentRank!==1 && m.leaderGDs<4 && m.rawRank!==1 && m.perfectBonus===0)x.score-=30;
   });
   pool.sort((a,b)=>b.score-a.score);
   const rawBest=pool[0]||{key:'Balanced Predictor',emoji:'⚖️',score:0,desc:'ยังไม่มีจุดใดโดดกว่าลีกมากพอ',why:'ข้อมูลยังไม่ชี้จุดเด่นชัด',family:'balanced'};
-  const best=rawBest.score<58?{key:'Balanced Predictor',emoji:'⚖️',score:rawBest.score,desc:'สไตล์ยังค่อนข้างสมดุล ไม่มี feature ใดโดดกว่าลีกมากพอ',why:'คะแนน feature ทุกมิติยังไม่ทิ้งกันแบบมีนัยสำคัญ',family:'balanced'}:rawBest;
+  const second=pool[1]||{score:0,family:'none'};
+  const protectedBest=(rawBest.key==='Champion Mindset'||rawBest.key==='Precision Expert'&&m.exactLeader||rawBest.key==='Pure Points Leader'||rawBest.key==='Front-runner Guardian'||rawBest.key==='Perfect GD Gamechanger');
+  const weakTop=rawBest.score<64 || (!protectedBest && rawBest.score-second.score<7 && rawBest.score<78);
+  const best=weakTop?{key:'Balanced Predictor',emoji:'⚖️',score:rawBest.score,desc:'สไตล์ยังค่อนข้างสมดุล ไม่มี feature ใดโดดกว่าลีกมากพอ',why:'ไม่มีมิติใดทิ้งคนอื่นแบบมีนัยสำคัญ จึงสรุปเป็นโปรไฟล์สมดุลแทนการฝืนติดป้าย',family:'balanced'}:rawBest;
   const used=new Set([best.family]);
   const traits=[];
   for(const x of pool){
     if(x.key===best.key)continue;
     if(used.has(x.family))continue;
-    if(x.score<55)continue;
+    if(x.score<60)continue;
     traits.push({key:x.key,emoji:x.emoji,score:Math.round(x.score),desc:x.desc,why:x.why,family:x.family});
     used.add(x.family);
     if(traits.length>=3)break;
@@ -2404,8 +2440,9 @@ function buildPlayerAnalysis(name){
   const champPickTotal=gamePlayers().filter(p=>p.champ).length;
   const champPickCount=player.champ?gamePlayers().filter(p=>p.champ===player.champ).length:0;
   const champPickPct=pct(champPickCount,champPickTotal);
+  const tablePosition=(standings.findIndex(([n])=>n===name)+1)||'-';
   const metrics={
-    currentRank:dense[name]||'-',isLast:(dense[name]||0)===standings.length,pts:s.pts||0,rawPts,rawRank,exactLeader,leaderGDs,longestLeadStreak,exact,correct,wrong,miss,total,
+    currentRank:dense[name]||'-',tablePosition,isLast:tablePosition===standings.length,pts:s.pts||0,rawPts,rawRank,exactLeader,leaderGDs,longestLeadStreak,exact,correct,wrong,miss,total,
     exactPct:pct(exact,total),correctPct:pct(correct,total),wrongPct:pct(wrong,total),overallAcc:pct(exact+correct,total),
     leagueExactPct,leagueAcc,safePct:pct(safe,safe+contra),contraPct:pct(contra,safe+contra),safeAcc:pct(safeGood,safe),contraAcc:pct(contraGood,contra),
     avgPredGoals:predCount?predGoals/predCount:0,leagueAvgPredGoals,highPct:pct(high,high+low),lowPct:pct(low,high+low),
