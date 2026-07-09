@@ -2234,6 +2234,13 @@ function getDNAFromMetrics(m){
   const champVeryRare=(m.champPickPct>0&&m.champPickPct<=8);
   const riskInefficient=(m.contraPct>=24&&m.contraAcc>0&&m.contraAcc<=Math.max(25,m.leagueAcc-12)&&m.exactBottomGroup);
   const riskInefficientSoft=(m.contraPct>=20&&m.contraAcc<m.leagueAcc&&m.exactBottomGroup&&(champRare||m.currentRank>=8));
+  // Temporal guard: ห้ามใช้ DNA/คะแนน Clutch ก่อนมีผลแมตช์รอบคะแนนหนักจริง
+  // เพราะ R32/QF ยังไม่ใช่ x2/x3; Clutch จะเริ่มมีความหมายหลัง SF/Third/Final มีผลแล้ว
+  const clutchEligible=(allMatches||[]).some(mm=>{
+    const st=normalizeStage(mm.stage);
+    const done=mm.score1!==''&&mm.score2!=='';
+    return done&&['sf','semifinal','semifinals','semi','semis','3rd','thirdplace','thirdplacematch','final','finals','championship'].includes(st);
+  });
   function add(key,emoji,score,desc,why,family){
     if(!Number.isFinite(score))score=0;
     pool.push({key,emoji,score,desc,why:why||desc,family:family||'other'});
@@ -2270,7 +2277,7 @@ function getDNAFromMetrics(m){
   add('Safe Accumulator','🛡️',(m.safePct>=82&&m.safeAcc>=m.leagueAcc)?62+(m.safePct-82)*1.1+(m.safeAcc-m.leagueAcc)*0.8:20,
     'เน้นตามภาพรวมของลีกและสะสมแต้มจากเกมที่ควรได้จริง ไม่ใช่แค่ตามเพื่อนบ่อย',
     `ตาม Majority ${m.safePct}%, safe accuracy ${m.safeAcc}% vs league ${m.leagueAcc}%`,'style');
-  add('Outcome Reader','🎯',(m.currentRank<=5&&m.overallAcc>=m.leagueAcc+3&&m.exactPct<=m.leagueExactPct+1&&m.correctPct>=45)?96+(m.overallAcc-m.leagueAcc)*1.4+(m.correctPct-45)*0.7+(m.currentRank<=4?6:0):18,
+  add('Outcome Reader','🎯',(m.currentRank<=5&&m.overallAcc>=m.leagueAcc+3&&m.exactPct<=m.leagueExactPct+1&&m.correctPct>=45)?104+(m.overallAcc-m.leagueAcc)*1.6+(m.correctPct-45)*0.9+(m.currentRank<=4?8:0):18,
     'อ่านผลแพ้-ชนะได้แข็งแรง เก็บ Correct Winner ต่อเนื่องแม้ไม่ได้พึ่ง Exact Score เยอะ',
     `อันดับ #${m.currentRank}, ทายไม่ผิด ${m.overallAcc}% vs league ${m.leagueAcc}%, Correct ${m.correct} นัด, Exact ${m.exact} นัด (${m.exactPct}% vs league ${m.leagueExactPct}%)`,'efficiency');
   add('Result Specialist','🧱',(m.currentRank<=6&&m.correctPct>=50&&m.wrongPct<=40&&m.exactPct<m.leagueExactPct+3)?84+(m.correctPct-50)*1.1+(40-m.wrongPct)*0.6:18,
@@ -2311,9 +2318,9 @@ function getDNAFromMetrics(m){
     `Draw pick ${m.drawPct}%`,'score');
 
   // 5) Tournament / movement / timing / bonus
-  add('Clutch Performer','⚡',(m.knockoutDone>=2&&m.knockoutAcc>=m.overallAcc+8)?72+(m.knockoutAcc-m.overallAcc)*1.5+m.stageBonus:18,
+  add('Clutch Performer','⚡',(clutchEligible&&m.knockoutDone>=2&&m.knockoutAcc>=m.overallAcc+8)?72+(m.knockoutAcc-m.overallAcc)*1.5+m.stageBonus:0,
     'รอบลึกและแมตช์คะแนนหนักทำได้ดีกว่าฟอร์มเฉลี่ยของตัวเอง',
-    `Knockout acc ${m.knockoutAcc}% vs overall ${m.overallAcc}%, stage bonus +${m.stageBonus}`,'tournament');
+    `Clutch eligible ${clutchEligible?'yes':'no'}, knockout acc ${m.knockoutAcc}% vs overall ${m.overallAcc}%, stage bonus +${m.stageBonus}`,'tournament');
   add('Momentum Builder','📈',(m.rankJump>=2||m.biggestJump>=3)?65+m.rankJump*5+m.biggestJump*6:18,
     'อันดับไต่ขึ้นชัดจากฟอร์มช่วงหลัง',
     `Rank movement ${m.rankJump>=0?'+':''}${m.rankJump}, biggest jump ${m.biggestJump}`,'movement');
@@ -2362,7 +2369,7 @@ function getDNAFromMetrics(m){
     accuracy:Math.round(Math.max(0,Math.min(100,50+accGap*2+(m.wrongPct<35?8:0)))),
     risk:Math.round(Math.max(0,Math.min(100,35+m.contraPct+(champRare?8:0)+(m.contraAcc-m.leagueAcc)/2))),
     precision:Math.round(Math.max(0,Math.min(100,48+exactGap*2+(m.avgAbsGoalError<=m.leagueAvgAbsGoalError?8:-5)))),
-    clutch:Math.round(Math.max(0,Math.min(100,40+(m.knockoutDone>=2?(m.knockoutAcc-m.overallAcc)*1.7:0)+m.stageBonus*2))),
+    clutch:clutchEligible?Math.round(Math.max(0,Math.min(100,40+(m.knockoutDone>=2?(m.knockoutAcc-m.overallAcc)*1.7:0)+m.stageBonus*2))):0,
     movement:Math.round(Math.max(0,Math.min(100,45+m.rankJump*5+m.biggestJump*7-m.biggestDrop*2+(m.leaderGDs>=4?10:0)))),
     timing:Math.round(Math.max(0,Math.min(100,m.avgLeadHours===null?0:40+Math.max(m.earlySavePct,m.lateSavePct)*.7)))
   };
@@ -2582,7 +2589,7 @@ function renderPlayerReport(name){
 function openPlayerReport(name){
   const modal=document.getElementById('player-report-modal');const content=document.getElementById('player-report-content');
   if(!modal||!content)return;
-  content.innerHTML=`<div class="report-head"><div><div class="report-title">Analyzing...</div><div class="report-sub">กำลังอ่าน Prediction DNA ของ ${escHtml(name)}</div></div><button class="report-close" onclick="closePlayerReport()">×</button></div><div class="report-hero"><div class="report-dna-label">🧬 Detecting pattern</div><div class="report-summary">กำลังสรุปแบบ Dynamic จากคะแนนล่าสุด, อันดับ, bonus, penalty, perfect GD, weight รอบรอง/รอบชิง x2/x3 และแพตเทิร์นการทาย</div></div>`;
+  content.innerHTML=`<div class="report-head"><div><div class="report-title">Analyzing...</div><div class="report-sub">กำลังอ่าน Prediction DNA ของ ${escHtml(name)}</div></div><button class="report-close" onclick="closePlayerReport()">×</button></div><div class="report-hero"><div class="report-dna-label">🧬 Detecting pattern</div><div class="report-summary">กำลังสรุปแบบ Dynamic จากคะแนนล่าสุด, อันดับ, bonus, penalty, perfect GD, weight x2/x3 เมื่อมีข้อมูลรอบคะแนนหนักจริง และแพตเทิร์นการทาย</div></div>`;
   modal.classList.add('open');document.body.style.overflow='hidden';
   setTimeout(()=>{content.innerHTML=renderPlayerReport(name);},450);
 }
