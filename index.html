@@ -2986,7 +2986,7 @@ function renderAdmin(){
     <h3>🏆 ผลแชมป์ / ดาวซัลโว</h3>
     <label style="font-size:12px;font-weight:700;color:#33503f;display:block;margin-bottom:4px">ทีมแชมป์จริง</label>
     <div style="position:relative">
-      <input class="admin-input" id="adm-champ-inp" placeholder="🔍 พิมชื่อทีม..." value="${settings['champion_result']||''}" autocomplete="off" style="margin-bottom:4px">
+      <input class="admin-input" id="adm-champ-inp" placeholder="🔍 เลือกทีมแชมป์..." value="${settings['champion_result']||''}" autocomplete="off" style="margin-bottom:4px">
       <div id="adm-champ-dd" class="champ-dd admin-champ-dd"></div>
     </div>
     <div id="adm-champ-show" style="margin-bottom:8px;padding:7px 12px;background:#fffbeb;border-radius:8px;font-size:13px;font-weight:600;color:var(--pitch);display:${settings['champion_result']?'block':'none'}">${settings['champion_result']?`${flagImg(settings['champion_result'],20)||''} ${settings['champion_result']}`||'':''}</div>
@@ -2998,7 +2998,7 @@ function renderAdmin(){
       <option value="__OTHER__" ${scorerIsOther?'selected':''}>อื่นๆ (โปรดระบุ)</option>
     </select>
     <input class="admin-input admin-scorer-other ${scorerIsOther?'open':''}" id="adm-scorer-other" value="${scorerIsOther?curScorer:''}" placeholder="ระบุชื่อนักเตะอื่นๆ">
-    <div class="admin-note">หมายเหตุ: หากเลือก “อื่นๆ” แล้วไม่มีผู้เล่นทายชื่อนี้ไว้ จะไม่มีผลต่อการบวกคะแนน และการตัดสินดาวซัลโวให้อิง FIFA Golden Boot อย่างเป็นทางการ</div>
+    <div class="admin-note">หมายเหตุ: หากเลือก “อื่นๆ” แล้วไม่มีผู้เล่นทายชื่อนี้ไว้ จะไม่มีผลต่อการบวกคะแนน และการตัดสินดาวซัลโว ให้อิง FIFA Golden Boot อย่างเป็นทางการ</div>
     <button class="btn-sm" id="btn-save-settings">บันทึก</button>
     <span id="adm-set-ok" style="font-size:11px;color:var(--good);margin-left:8px;display:none">✓ บันทึกแล้ว</span>
   </div>`;
@@ -3007,7 +3007,7 @@ function renderAdmin(){
   html+=`<div class="admin-card">
     <h3>➕ เพิ่มผู้เล่นใหม่</h3>
     <p style="font-size:12px;color:var(--muted);margin-bottom:10px">ผู้เล่นใหม่จะต้องตั้ง PIN เองตอน login ครั้งแรก</p>
-    <input class="admin-input" id="adm-new-name" placeholder="ชื่อผู้เล่น เช่น Beer, Mint...">
+    <input class="admin-input" id="adm-new-name" placeholder="ชื่อผู้เล่น เช่น Pui, May...">
     <button class="btn-sm green" id="btn-add-player">เพิ่มผู้เล่น</button>
     <span id="adm-add-ok" style="font-size:11px;color:var(--good);margin-left:8px;display:none">✓ เพิ่มแล้ว</span>
     <span id="adm-add-err" style="font-size:11px;color:var(--bad);margin-left:8px;display:none"></span>
