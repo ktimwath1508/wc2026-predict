@@ -2261,8 +2261,8 @@ function getDNAFromMetrics(m){
     'เคยคุมหัวตารางอยู่นานก่อนถูกปาดจากโมเมนตัม/คะแนนพิเศษช่วงหลัง',
     `เคยอยู่ Rank #1 ${m.leaderGDs} จุด แต่ปัจจุบัน #${m.currentRank}`,'rank');
   add('Pure Points Leader','🧾',m.rawRank===1?92+(m.exactLeader?6:0):8,
-    'ถ้าวัดเฉพาะคะแนนทายผลจริง ไม่รวมโบนัสและบทลงโทษ คือหัวตาราง',
-    `Pure prediction score ${m.rawPts} pts, raw rank #${m.rawRank}`,'rank');
+    'ถ้าวัดเฉพาะคะแนนทายรายแมตช์ รวม weight x2/x3 แต่ไม่รวม Perfect GD โบนัส และบทลงโทษ คือหัวตาราง',
+    `Pure prediction score ${m.rawPts} pts (match points only; excludes Perfect GD/bonus/penalty), raw rank #${m.rawRank}`,'rank');
 
   // 2) Accuracy / exact — ต้องโดดกว่าค่าเฉลี่ยจริง
   add('Precision Expert','🎯',m.exactLeader?94+Math.min(8,m.exact):sig(42,exactGap,2.4)+(m.exact>=10?6:0),
@@ -2321,9 +2321,17 @@ function getDNAFromMetrics(m){
     `Draw pick ${m.drawPct}%`,'score');
 
   // 5) Tournament / movement / timing / bonus
-  add('Clutch Performer','⚡',(clutchEligible&&m.knockoutDone>=2&&m.knockoutAcc>=m.overallAcc+8)?72+(m.knockoutAcc-m.overallAcc)*1.5+m.stageBonus:0,
-    'รอบลึกและแมตช์คะแนนหนักทำได้ดีกว่าฟอร์มเฉลี่ยของตัวเอง',
-    `Clutch eligible ${clutchEligible?'yes':'no'}, knockout acc ${m.knockoutAcc}% vs overall ${m.overallAcc}%, stage bonus +${m.stageBonus}`,'tournament');
+  const clutchImpact=(m.deepDone>=2&&m.deepWeightedPts>0&&(
+    (m.deepRank<=3&&m.deepAcc>=m.overallAcc+5)||
+    (m.deepRank<=3&&m.deepWeightedPts>=m.deepLeagueAvgPts+2)||
+    (m.deepExact>=1&&m.deepWeightedPts>=m.deepLeagueAvgPts)
+  ));
+  add('Clutch Performer','⚡',(clutchEligible&&clutchImpact)?100+
+      Math.max(0,(m.deepAcc-m.overallAcc))*1.25+
+      Math.max(0,m.deepWeightedPts-m.deepLeagueAvgPts)*2+
+      (m.deepRank===1?10:m.deepRank===2?6:m.deepRank===3?3:0):0,
+    'ช่วงรอบรอง/ชิงที่คะแนน x2/x3 ทำแต้มได้โดดเด่นกว่าฟอร์มเดิมและกว่าค่าเฉลี่ยของลีก จนสร้างผลต่อช่องว่างคะแนนหรืออันดับ',
+    `Deep rank #${m.deepRank}, weighted points ${m.deepWeightedPts} vs league avg ${m.deepLeagueAvgPts.toFixed(1)}, deep acc ${m.deepAcc}% vs overall ${m.overallAcc}%, exact ${m.deepExact}`,'tournament');
   add('Momentum Builder','📈',(m.rankJump>=2||m.biggestJump>=3)?65+m.rankJump*5+m.biggestJump*6:18,
     'อันดับไต่ขึ้นชัดจากฟอร์มช่วงหลัง',
     `Rank movement ${m.rankJump>=0?'+':''}${m.rankJump}, biggest jump ${m.biggestJump}`,'movement');
@@ -2372,7 +2380,11 @@ function getDNAFromMetrics(m){
     accuracy:Math.round(Math.max(0,Math.min(100,50+accGap*2+(m.wrongPct<35?8:0)))),
     risk:Math.round(Math.max(0,Math.min(100,35+m.contraPct+(champRare?8:0)+(m.contraAcc-m.leagueAcc)/2))),
     precision:Math.round(Math.max(0,Math.min(100,48+exactGap*2+(m.avgAbsGoalError<=m.leagueAvgAbsGoalError?8:-5)))),
-    clutch:clutchEligible?Math.round(Math.max(0,Math.min(100,40+(m.knockoutDone>=2?(m.knockoutAcc-m.overallAcc)*1.7:0)+m.stageBonus*2))):0,
+    clutch:clutchEligible?Math.round(Math.max(0,Math.min(100,
+      30+(m.deepDone>=2?Math.max(0,m.deepAcc-m.overallAcc)*1.4:0)+
+      Math.max(0,m.deepWeightedPts-m.deepLeagueAvgPts)*3+
+      (m.deepRank===1?18:m.deepRank===2?12:m.deepRank===3?7:0)
+    ))):0,
     movement:Math.round(Math.max(0,Math.min(100,45+m.rankJump*5+m.biggestJump*7-m.biggestDrop*2+(m.leaderGDs>=4?10:0)))),
     timing:Math.round(Math.max(0,Math.min(100,m.avgLeadHours===null?0:40+Math.max(m.earlySavePct,m.lateSavePct)*.7)))
   };
@@ -2447,9 +2459,32 @@ function buildPlayerAnalysis(name){
   const favExact=Object.entries(exactScores).sort((a,b)=>b[1]-a[1])[0]||['-',0];
   const topTeam=Object.entries(teamBias).sort((a,b)=>b[1]-a[1])[0]||['-',0];
   const scoreType=Object.entries(scoreTypeCounts).sort((a,b)=>b[1]-a[1])[0]||['-',0];
-  const rawRows=standings.map(([n,st])=>({name:n,raw:(st.exactPts||0)+(st.correctPts||0)+(st.perfectBonus||0),exact:st.exact||0})).sort((a,b)=>b.raw-a.raw||b.exact-a.exact);
+  const rawRows=standings.map(([n,st])=>({name:n,raw:(st.exactPts||0)+(st.correctPts||0),exact:st.exact||0})).sort((a,b)=>b.raw-a.raw||b.exact-a.exact);
   const rawRank=(rawRows.findIndex(r=>r.name===name)+1)||'-';
   const rawPts=(rawRows.find(r=>r.name===name)||{raw:0}).raw;
+
+  // Deep-round performance: เฉพาะแมตช์ที่กติกาให้คะแนน x2/x3 (SF / Third Place / Final)
+  // ใช้เป็น evidence ของ Clutch Performer โดยไม่ปน Perfect GD หรือ bonus/penalty
+  const deepMatches=completed.filter(mm=>getStageMult(mm.stage)>1);
+  const deepRows=gamePlayers().map(pl=>{
+    let done=0,good=0,exactCnt=0,weightedPts=0,basePts=0;
+    deepMatches.forEach(mm=>{
+      const pr=allPreds.find(pp=>pp.match_id===mm.match_id&&pp.player_name===pl.name);
+      const bp=calcPts(pr,mm);
+      if(bp===null)return;
+      done++;
+      basePts+=bp||0;
+      weightedPts+=(bp||0)*getStageMult(mm.stage);
+      if(bp>0)good++;
+      if(bp===3)exactCnt++;
+    });
+    return{name:pl.name,done,good,exact:exactCnt,weightedPts,basePts,acc:pct(good,done)};
+  }).sort((a,b)=>b.weightedPts-a.weightedPts||b.exact-a.exact||b.good-a.good);
+  const deepSelf=deepRows.find(r=>r.name===name)||{done:0,good:0,exact:0,weightedPts:0,basePts:0,acc:0};
+  const deepRank=deepSelf.done?(deepRows.filter(r=>r.weightedPts>deepSelf.weightedPts).length+1):'-';
+  const deepActiveRows=deepRows.filter(r=>r.done>0);
+  const deepLeagueAvgPts=deepActiveRows.length?deepActiveRows.reduce((a,r)=>a+r.weightedPts,0)/deepActiveRows.length:0;
+  const deepLeagueAcc=deepActiveRows.length?pct(deepActiveRows.reduce((a,r)=>a+r.good,0),deepActiveRows.reduce((a,r)=>a+r.done,0)):0;
   const exactCounts=standings.map(([,st])=>st.exact||0).sort((a,b)=>a-b);
   const minExact=exactCounts.length?exactCounts[0]:0;
   const exactRank=(standings.filter(([,st])=>(st.exact||0)>exact).length+1)||'-';
@@ -2475,7 +2510,9 @@ function buildPlayerAnalysis(name){
     recoveryPct:pct(correct,correct+wrong),leagueRecoveryPct,
     leagueExactPct,leagueAcc,safePct:pct(safe,safe+contra),contraPct:pct(contra,safe+contra),safeAcc:pct(safeGood,safe),contraAcc:pct(contraGood,contra),
     avgPredGoals:predCount?predGoals/predCount:0,leagueAvgPredGoals,highPct:pct(high,high+low),lowPct:pct(low,high+low),
-    knockoutAcc:pct(kGood,kDone),knockoutDone:kDone,bestRank,worstRank,rankJump,biggestJump,biggestDrop,
+    knockoutAcc:pct(kGood,kDone),knockoutDone:kDone,
+    deepDone:deepSelf.done,deepGood:deepSelf.good,deepExact:deepSelf.exact,deepAcc:deepSelf.acc,deepWeightedPts:deepSelf.weightedPts,deepBasePts:deepSelf.basePts,deepRank,deepLeagueAvgPts,deepLeagueAcc,
+    bestRank,worstRank,rankJump,biggestJump,biggestDrop,
     favScore:fav[0],favScoreCount:fav[1],favExactScore:favExact[0],favExactScoreCount:favExact[1],topTeam:topTeam[0],topTeamCount:topTeam[1],
     champ:player.champ||'',champPickCount,champPickPct,scorer:player.scorer||'',bonus:s.bonus||0,penalty:s.penalty||0,perfectBonus:s.perfectBonus||0,stageBonus:s.stageBonus||0,
     drawPct:pct(drawPick,predCount),cleanSheetPct:pct(cleanSheetPick,predCount),boldScorePct:pct(boldScore,predCount),tightScorePct:pct(tightScore,predCount),
@@ -2488,7 +2525,7 @@ function buildPlayerAnalysis(name){
   const champResult=settings['champion_result']||'';const scorerResult=settings['scorer_result']||'';
   const strengths=[];const weaknesses=[];const evidence=[];
   if(metrics.currentRank===1)strengths.push('คว้าอันดับ 1 จากคะแนนสุทธิหลังรวมโบนัสและบทลงโทษแล้ว');
-  if(metrics.rawRank===1)strengths.push(`ถ้านับเฉพาะคะแนนทายผลจริง ไม่รวมโบนัส/บทลงโทษ จะเป็นอันดับ 1 (${metrics.rawPts} แต้ม)`);
+  if(metrics.rawRank===1)strengths.push(`ถ้านับเฉพาะคะแนนทายรายแมตช์ รวม x2/x3 แต่ไม่รวม Perfect GD/โบนัส/บทลงโทษ จะเป็นอันดับ 1 (${metrics.rawPts} แต้ม)`);
   if(metrics.exactLeader)strengths.push(`เป็นผู้นำ Exact ของลีกตอนนี้ (${metrics.exact} นัดเป๊ะ)`);
   if(metrics.leaderGDs>=4)strengths.push(`เคยยืนอันดับ 1 รวม ${metrics.leaderGDs} จุดบนกราฟ เป็นตัวเต็งหัวตารางตัวจริง`);
   if(metrics.perfectBonus>0)strengths.push(`มี Perfect Gameday สร้างคะแนนพิเศษ +${metrics.perfectBonus} และเปลี่ยนโมเมนตัมอันดับ`);
@@ -2515,7 +2552,7 @@ function buildPlayerAnalysis(name){
   if(metrics.currentRank<=5&&metrics.exactPct<=metrics.leagueExactPct+1&&metrics.correctPct>=45)evidence.push(`Result efficiency: Exact ไม่สูง (${metrics.exact} นัด) แต่ Correct ${metrics.correct} นัดช่วยพยุงอันดับ #${metrics.currentRank}`);
   if(dna.key==='Exact Hunter')evidence.push(`Exact conversion gap: Exact อยู่ Rank #${metrics.exactRank} (${metrics.exact} นัด) แต่เมื่อไม่เป๊ะยังเก็บผลถูกได้ ${metrics.recoveryPct}% เทียบลีก ${metrics.leagueRecoveryPct}% จึงอยู่เพียงอันดับ #${metrics.currentRank}`);
   if(metrics.leaderGDs>=4)evidence.push(`Leader history: เคยอยู่ที่ 1 ${metrics.leaderGDs} จุดบนกราฟ ก่อนอันดับล่าสุด #${metrics.currentRank}`);
-  if(metrics.rawRank===1)evidence.push(`Pure prediction score: ${metrics.rawPts} แต้ม สูงสุดเมื่อไม่รวม bonus/penalty`);
+  if(metrics.rawRank===1)evidence.push(`Pure prediction score: ${metrics.rawPts} แต้ม สูงสุดจากคะแนนรายแมตช์ (รวม x2/x3 แต่ไม่รวม Perfect GD/bonus/penalty)`);
   if(metrics.favScoreCount>1)evidence.push(`สกอร์ลายเซ็นคือ ${metrics.favScore} ใช้ ${metrics.favScoreCount} ครั้ง`);
   if(metrics.favExactScoreCount>0)evidence.push(`สกอร์ที่เข้าเป้าบ่อยสุดคือ ${metrics.favExactScore} (${metrics.favExactScoreCount} ครั้ง)`);
   if(metrics.scoreType!=='-')evidence.push(`รูปแบบสกอร์ที่ชอบสุด: ${metrics.scoreType} ${metrics.scoreTypeCount} ครั้ง`);
@@ -2526,7 +2563,7 @@ function buildPlayerAnalysis(name){
   let summary=`${name} ถูกจัดเป็น ${dna.key} เพราะ ${dna.desc} จากข้อมูล${isFinal?'ตลอดทัวร์นาเมนต์':'ล่าสุด ณ ตอนนี้'} มี ${metrics.pts} แต้ม อันดับ #${metrics.currentRank}, Exact ${metrics.exactPct}% และทายไม่ผิด ${metrics.overallAcc}% เทียบกับลีก ${metrics.leagueAcc}% `;
   summary+= metrics.safePct>=metrics.contraPct ? `ภาพรวมเล่นตาม Majority ${metrics.safePct}% ` : `ภาพรวมกล้าฉีกจาก Majority ${metrics.contraPct}% `;
   summary+=`แพทเทิร์นสกอร์คือ Avg Goals ${metrics.avgPredGoals.toFixed(1)} ลูก, ชอบ ${metrics.scoreType}, สกอร์ที่ใช้บ่อย ${metrics.favScore}. `;
-  if(metrics.rawRank===1)summary+=`ถ้านับเฉพาะคะแนนทายผลจริงไม่รวมโบนัส/บทลงโทษ ตอนนี้เป็นผู้นำ Pure Prediction ${metrics.rawPts} แต้ม. `;
+  if(metrics.rawRank===1)summary+=`ถ้านับเฉพาะคะแนนทายรายแมตช์ รวม x2/x3 แต่ไม่รวม Perfect GD/โบนัส/บทลงโทษ ตอนนี้เป็นผู้นำ Pure Prediction ${metrics.rawPts} แต้ม. `;
   if(metrics.exactLeader)summary+=`เป็นคนที่ทายเป๊ะมากสุดร่วม/เดี่ยวของลีก (${metrics.exact} นัด). `;
   if(dna.key==='Outcome Reader'||dna.key==='Result Specialist')summary+=`จุดเด่นคือไม่ได้พึ่ง Exact เป็นหลัก แต่เปลี่ยนแมตช์ส่วนใหญ่ให้เป็นคะแนนจาก Correct Winner ได้สม่ำเสมอ จึงเกาะกลุ่มนำได้แม้สัดส่วน Exact ไม่สูง. `;
   if(dna.key==='Exact Hunter')summary+=`จุดเด่นคือ Exact ${metrics.exact} นัด อยู่ Rank #${metrics.exactRank} ของลีก แต่เมื่อไม่เป๊ะยังเก็บ Correct ได้ ${metrics.recoveryPct}% เทียบค่าเฉลี่ยลีก ${metrics.leagueRecoveryPct}% จึงมีลักษณะ “เป๊ะแล้วได้ก้อนใหญ่ แต่ถ้าไม่เป๊ะมีโอกาสหลุดเป็นศูนย์” และอันดับรวมยังอยู่ #${metrics.currentRank}. `;
