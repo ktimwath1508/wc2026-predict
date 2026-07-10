@@ -2268,6 +2268,9 @@ function getDNAFromMetrics(m){
   add('Precision Expert','🎯',m.exactLeader?94+Math.min(8,m.exact):sig(42,exactGap,2.4)+(m.exact>=10?6:0),
     'ความคมของ Exact เด่นกว่าลีกอย่างชัดเจน',
     `Exact ${m.exactPct}% vs league ${m.leagueExactPct}% (${exactGap>=0?'+':''}${exactGap} pp), exact ${m.exact} นัด`,'precision');
+  add('Exact Hunter','🎯',(m.exactRank<=3&&m.currentRank>=5&&exactGap>=2&&m.recoveryPct<=m.leagueRecoveryPct-2)?108+(3-m.exactRank)*3+exactGap*1.6+(m.leagueRecoveryPct-m.recoveryPct)*1.2:14,
+    'ทายสกอร์เป๊ะได้ในระดับหัวแถว แต่เมื่อไม่เป๊ะมักหลุดเป็น Wrong มากกว่ากลุ่ม Outcome Reader ทำให้ความคมยังแปลงเป็นอันดับได้ไม่เต็มที่',
+    `Exact rank #${m.exactRank} (${m.exact} นัด, ${m.exactPct}% vs league ${m.leagueExactPct}%) แต่ non-exact recovery ${m.recoveryPct}% vs league ${m.leagueRecoveryPct}%, current rank #${m.currentRank}`,'precision');
   add('Tactical Analyst','🧠',sig(44,accGap,2.0)+(m.currentRank<=5?6:0)+(m.wrongPct<35?5:0),
     'อ่านผู้ชนะได้ดี เก็บคะแนนจาก Correct/Exact ได้มั่นคง',
     `Accuracy ${m.overallAcc}% vs league ${m.leagueAcc}% (${accGap>=0?'+':''}${accGap} pp)`,'accuracy');
@@ -2352,7 +2355,7 @@ function getDNAFromMetrics(m){
   pool.sort((a,b)=>b.score-a.score);
   const rawBest=pool[0]||{key:'Balanced Predictor',emoji:'⚖️',score:0,desc:'ยังไม่มีจุดใดโดดกว่าลีกมากพอ',why:'ข้อมูลยังไม่ชี้จุดเด่นชัด',family:'balanced'};
   const second=pool[1]||{score:0,family:'none'};
-  const protectedBest=(rawBest.key==='Champion Mindset'||rawBest.key==='Precision Expert'&&m.exactLeader||rawBest.key==='Pure Points Leader'||rawBest.key==='Front-runner Guardian'||rawBest.key==='Perfect GD Gamechanger'||rawBest.key==='High-Risk Explorer'||rawBest.key==='Outcome Reader');
+  const protectedBest=(rawBest.key==='Champion Mindset'||rawBest.key==='Precision Expert'&&m.exactLeader||rawBest.key==='Pure Points Leader'||rawBest.key==='Front-runner Guardian'||rawBest.key==='Perfect GD Gamechanger'||rawBest.key==='High-Risk Explorer'||rawBest.key==='Outcome Reader'||rawBest.key==='Exact Hunter');
   const weakTop=rawBest.score<64 || (!protectedBest && rawBest.score-second.score<7 && rawBest.score<78);
   const best=weakTop?{key:'Balanced Predictor',emoji:'⚖️',score:rawBest.score,desc:'สไตล์ยังค่อนข้างสมดุล ไม่มี feature ใดโดดกว่าลีกมากพอ',why:'ไม่มีมิติใดทิ้งคนอื่นแบบมีนัยสำคัญ จึงสรุปเป็นโปรไฟล์สมดุลแทนการฝืนติดป้าย',family:'balanced'}:rawBest;
   const used=new Set([best.family]);
@@ -2427,6 +2430,8 @@ function buildPlayerAnalysis(name){
   const leagueRows=standings.map(([,x])=>x);const leagueDone=Math.max(1,leagueRows.reduce((a,x)=>a+x.exact+x.correct+x.wrong,0));
   const leagueExactPct=pct(leagueRows.reduce((a,x)=>a+x.exact,0),leagueDone);
   const leagueAcc=pct(leagueRows.reduce((a,x)=>a+x.exact+x.correct,0),leagueDone);
+  const leagueNonExactDone=Math.max(1,leagueRows.reduce((a,x)=>a+x.correct+x.wrong,0));
+  const leagueRecoveryPct=pct(leagueRows.reduce((a,x)=>a+x.correct,0),leagueNonExactDone);
   let leagueGoalTotal=0,leaguePredCnt=0,leagueErr=0,leagueErrCnt=0;
   const allCompletedById={};completed.forEach(m=>allCompletedById[m.match_id]=m);
   gamePreds().forEach(p=>{const m=allCompletedById[p.match_id];if(m&&p.s1!==''&&p.s2!==''){const pg=+p.s1 + +p.s2;leagueGoalTotal+=pg;leaguePredCnt++;leagueErr+=Math.abs(pg-(+m.score1+ +m.score2));leagueErrCnt++;}});
@@ -2467,6 +2472,7 @@ function buildPlayerAnalysis(name){
   const metrics={
     currentRank:dense[name]||'-',tablePosition,isLast:tablePosition===standings.length,pts:s.pts||0,rawPts,rawRank,exactLeader,exactRank,exactBottomRank,exactBottomGroup,minExact,leaderGDs,longestLeadStreak,exact,correct,wrong,miss,total,
     exactPct:pct(exact,total),correctPct:pct(correct,total),wrongPct:pct(wrong,total),overallAcc:pct(exact+correct,total),
+    recoveryPct:pct(correct,correct+wrong),leagueRecoveryPct,
     leagueExactPct,leagueAcc,safePct:pct(safe,safe+contra),contraPct:pct(contra,safe+contra),safeAcc:pct(safeGood,safe),contraAcc:pct(contraGood,contra),
     avgPredGoals:predCount?predGoals/predCount:0,leagueAvgPredGoals,highPct:pct(high,high+low),lowPct:pct(low,high+low),
     knockoutAcc:pct(kGood,kDone),knockoutDone:kDone,bestRank,worstRank,rankJump,biggestJump,biggestDrop,
@@ -2507,6 +2513,7 @@ function buildPlayerAnalysis(name){
   evidence.push(`Feature snapshot: Rank #${metrics.currentRank}, Raw rank #${metrics.rawRank}, Safe ${metrics.safePct}% / Contra ${metrics.contraPct}% / Exact ${metrics.exactPct}% / Avg Goals ${metrics.avgPredGoals.toFixed(1)} / Best stage ${metrics.bestStage}`);
   if(metrics.contraPct>=20&&metrics.exactBottomGroup)evidence.push(`Risk efficiency: สวน ${metrics.contraPct}% แต่สวนถูก ${metrics.contraAcc}% เทียบลีก ${metrics.leagueAcc}% และ Exact ${metrics.exact} นัดอยู่กลุ่มล่าง`);
   if(metrics.currentRank<=5&&metrics.exactPct<=metrics.leagueExactPct+1&&metrics.correctPct>=45)evidence.push(`Result efficiency: Exact ไม่สูง (${metrics.exact} นัด) แต่ Correct ${metrics.correct} นัดช่วยพยุงอันดับ #${metrics.currentRank}`);
+  if(dna.key==='Exact Hunter')evidence.push(`Exact conversion gap: Exact อยู่ Rank #${metrics.exactRank} (${metrics.exact} นัด) แต่เมื่อไม่เป๊ะยังเก็บผลถูกได้ ${metrics.recoveryPct}% เทียบลีก ${metrics.leagueRecoveryPct}% จึงอยู่เพียงอันดับ #${metrics.currentRank}`);
   if(metrics.leaderGDs>=4)evidence.push(`Leader history: เคยอยู่ที่ 1 ${metrics.leaderGDs} จุดบนกราฟ ก่อนอันดับล่าสุด #${metrics.currentRank}`);
   if(metrics.rawRank===1)evidence.push(`Pure prediction score: ${metrics.rawPts} แต้ม สูงสุดเมื่อไม่รวม bonus/penalty`);
   if(metrics.favScoreCount>1)evidence.push(`สกอร์ลายเซ็นคือ ${metrics.favScore} ใช้ ${metrics.favScoreCount} ครั้ง`);
@@ -2522,6 +2529,7 @@ function buildPlayerAnalysis(name){
   if(metrics.rawRank===1)summary+=`ถ้านับเฉพาะคะแนนทายผลจริงไม่รวมโบนัส/บทลงโทษ ตอนนี้เป็นผู้นำ Pure Prediction ${metrics.rawPts} แต้ม. `;
   if(metrics.exactLeader)summary+=`เป็นคนที่ทายเป๊ะมากสุดร่วม/เดี่ยวของลีก (${metrics.exact} นัด). `;
   if(dna.key==='Outcome Reader'||dna.key==='Result Specialist')summary+=`จุดเด่นคือไม่ได้พึ่ง Exact เป็นหลัก แต่เปลี่ยนแมตช์ส่วนใหญ่ให้เป็นคะแนนจาก Correct Winner ได้สม่ำเสมอ จึงเกาะกลุ่มนำได้แม้สัดส่วน Exact ไม่สูง. `;
+  if(dna.key==='Exact Hunter')summary+=`จุดเด่นคือ Exact ${metrics.exact} นัด อยู่ Rank #${metrics.exactRank} ของลีก แต่เมื่อไม่เป๊ะยังเก็บ Correct ได้ ${metrics.recoveryPct}% เทียบค่าเฉลี่ยลีก ${metrics.leagueRecoveryPct}% จึงมีลักษณะ “เป๊ะแล้วได้ก้อนใหญ่ แต่ถ้าไม่เป๊ะมีโอกาสหลุดเป็นศูนย์” และอันดับรวมยังอยู่ #${metrics.currentRank}. `;
   if(metrics.leaderGDs>=4&&metrics.currentRank>1)summary+=`เคยเฝ้าจ่าฝูงอยู่นาน ${metrics.leaderGDs} จุดบนกราฟ ก่อนถูกปาดจากโมเมนตัมรอบล่าสุด. `;
   if(metrics.perfectBonus>0)summary+=`มี Perfect Gameday เป็นจุดเปลี่ยนสำคัญ บวกพิเศษ ${metrics.perfectBonus} แต้ม. `;
   if(metrics.avgLeadHours!==null){summary+=`จังหวะการทายเฉลี่ย ${metrics.avgLeadHours.toFixed(1)} ชม.ก่อนเตะ (${metrics.earlySavePct}% ส่งเร็ว / ${metrics.lateSavePct}% โค้งสุดท้าย). `;}
@@ -2530,6 +2538,7 @@ function buildPlayerAnalysis(name){
   summary+=`${champTxt}; ${scorerTxt}.`;
   let recommendation='ครั้งหน้าควรรักษาจุดแข็งเรื่องการอ่านผู้ชนะไว้ แล้วเพิ่มความละเอียดในการเดาสกอร์เพื่อขยับ Exact ให้สูงขึ้น';
   if(dna.key==='Outcome Reader'||dna.key==='Result Specialist')recommendation='ฐานการอ่านผลการแข่งขันแข็งแรงมากแล้ว ถ้าเพิ่ม Exact Score ได้อีกเพียงเล็กน้อย โดยใช้แพทเทิร์น historical, xG, ฟอร์มเกมรุก/รับ และสกอร์ยอดนิยมของคู่ลักษณะเดียวกัน จะมีโอกาสขยับจากกลุ่มนำไปลุ้นแชมป์ได้จริง';
+  if(dna.key==='Exact Hunter')recommendation='ความคมด้าน Exact อยู่ระดับหัวแถวแล้ว จุดที่เพิ่มอันดับได้เร็วที่สุดคือยกระดับ “แผนสำรองเมื่อไม่มั่นใจสกอร์” ให้ยังทายผลถูกก่อน โดยใช้ historical, xG, ฟอร์มเหย้า-เยือน และเช็ก lineup ใกล้ kickoff เพื่อเลือกผู้ชนะให้แม่นขึ้น แม้สกอร์จะไม่เป๊ะก็ยังเก็บแต้มต่อเนื่องได้';
   if(!(dna.key==='Outcome Reader'||dna.key==='Result Specialist')&&metrics.safePct>=75)recommendation='ครั้งหน้าลองกล้าเสี่ยงในเกมสูสีมากขึ้นเล็กน้อย เพราะคุณเก็บแต้มได้สม่ำเสมอแล้ว แต่การฉีกบางคู่จะช่วยสร้างช่องว่างในการลุ้นแชมป์';
   if(!(dna.key==='Outcome Reader'||dna.key==='Result Specialist')&&metrics.contraPct>=50)recommendation='ครั้งหน้าควรเลือกจังหวะฉีกให้แม่นขึ้น ลดการสวนในเกมที่ทีมเต็งชัดมาก แล้วเก็บความเสี่ยงไว้กับคู่ที่ฟอร์มหรือราคาใกล้กันจริง ๆ';
   if(!(dna.key==='Outcome Reader'||dna.key==='Result Specialist')&&metrics.champ&&metrics.champPickPct>0&&metrics.champPickPct<=15&&metrics.currentRank>5)recommendation='สไตล์กล้าเลือกต่างคือเอกลักษณ์ที่ดี แต่ถ้าเป้าหมายคือคะแนนรวม ลองแยกทีมที่เชียร์ออกจากทีมที่มีโอกาสให้แต้มสูงสุด โดยเก็บการเสี่ยงไว้กับคู่ที่มีข้อมูลสนับสนุนจริง ๆ';
