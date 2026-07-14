@@ -3025,7 +3025,7 @@ function selectAdmChamp(name){
 // ── ADMIN TAB ──────────────────────────────────────────────────
 function renderAdmin(){
   const content=document.getElementById('admin-content');
-  const scorerChoices=['Messi','Mbappe','Kane','Haaland'];
+  const scorerChoices=['Messi','Mbappe','Kane','Bellingham','Dembele'];
   const curScorer=settings['scorer_result']||'';
   const scorerIsOther=!!curScorer&&!scorerChoices.includes(curScorer);
   let html=`<div class="admin-card">
