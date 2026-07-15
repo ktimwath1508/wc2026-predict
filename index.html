@@ -876,6 +876,29 @@ html[data-theme="night"] .report-title,html[data-theme="night"] .report-dna-labe
 html[data-theme="night"] .report-bar-track,html[data-theme="neon"] .report-bar-track{background:#193029}
 @media(max-width:380px){.report-grid{grid-template-columns:1fr}.report-actions{grid-template-columns:1fr}.report-bar-row{grid-template-columns:64px 1fr 38px}}
 
+/* SCORE SOURCE DONUT */
+.score-source-wrap{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center}
+.score-donut-wrap{position:relative;width:150px;height:150px;margin:auto}
+.score-donut-wrap canvas{width:150px!important;height:150px!important}
+.score-donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center}
+.score-donut-center b{font-family:var(--display);font-size:27px;line-height:1;color:var(--pitch)}
+.score-donut-center span{font-size:10.5px;color:var(--muted);font-weight:700;margin-top:4px}
+.score-source-legend{display:grid;gap:7px}
+.score-source-item{display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center;font-size:11.5px;padding:6px 8px;border-radius:9px;background:var(--soft-card,#f8faf7);border:1px solid var(--border,#e6eee4)}
+.score-source-dot{width:10px;height:10px;border-radius:50%;display:block}
+.score-source-name{font-weight:700;color:#334155;line-height:1.25}
+.score-source-val{font-family:var(--display);font-weight:900;color:var(--pitch);white-space:nowrap}
+.score-ledger{display:grid;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border,#e6eee4)}
+.score-ledger-row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:#475569}
+.score-ledger-row b{font-family:var(--display);color:var(--pitch)}
+.score-ledger-row.penalty b{color:var(--bad)}
+.score-ledger-row.total{font-weight:900;border-top:1px dashed var(--border,#d8e0d6);padding-top:7px}
+.pure-score-callout{margin-top:10px;padding:10px 11px;border-radius:11px;background:linear-gradient(135deg,rgba(31,157,85,.08),rgba(245,197,24,.08));border:1px solid var(--border,#e6eee4);font-size:12px;line-height:1.6;color:#334155}
+.pure-score-callout b{font-family:var(--display);color:var(--pitch)}
+html[data-theme="night"] .score-source-name,html[data-theme="night"] .score-ledger-row,html[data-theme="night"] .pure-score-callout,html[data-theme="neon"] .score-source-name,html[data-theme="neon"] .score-ledger-row,html[data-theme="neon"] .pure-score-callout{color:#eafff5}
+html[data-theme="night"] .score-donut-center b,html[data-theme="night"] .score-source-val,html[data-theme="night"] .score-ledger-row b,html[data-theme="night"] .pure-score-callout b,html[data-theme="neon"] .score-donut-center b,html[data-theme="neon"] .score-source-val,html[data-theme="neon"] .score-ledger-row b,html[data-theme="neon"] .pure-score-callout b{color:var(--good)}
+@media(max-width:380px){.score-source-wrap{grid-template-columns:1fr}.score-donut-wrap{width:165px;height:165px}.score-donut-wrap canvas{width:165px!important;height:165px!important}}
+
 /* DNA metric cards: actual units + league median comparison */
 .report-stat.metric-compare{padding:11px 10px;text-align:left}
 .metric-main{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
@@ -2110,7 +2133,7 @@ function renderViewGrid(gd){
 // ── STANDINGS ──────────────────────────────────────────────────
 function calcStandings(upToGD=null){
   const sc={};
-  gamePlayers().forEach(p=>{sc[p.name]={pts:0,exact:0,correct:0,wrong:0,exactPts:0,correctPts:0,perfectBonus:0,stageBonus:0,bonus:0,champ:p.champ,scorer:p.scorer,penalty:p.bonus_penalty||0,penaltyCount:Math.round((p.bonus_penalty||0)/5)};});
+  gamePlayers().forEach(p=>{sc[p.name]={pts:0,exact:0,correct:0,wrong:0,exactPts:0,correctPts:0,exactBasePts:0,correctBasePts:0,perfectBonus:0,stageBonus:0,champBonus:0,scorerBonus:0,bonus:0,champ:p.champ,scorer:p.scorer,penalty:p.bonus_penalty||0,penaltyCount:Math.round((p.bonus_penalty||0)/5)};});
   const gdMap={};allMatches.forEach(m=>{if(upToGD&&+m.gd>+upToGD)return;if(!gdMap[m.gd])gdMap[m.gd]=[];gdMap[m.gd].push(m);});
   Object.entries(gdMap).forEach(([gd,ms])=>{
     const done=ms.filter(m=>m.score1!==''&&m.score2!=='');if(!done.length)return;
@@ -2124,8 +2147,8 @@ function calcStandings(upToGD=null){
         const matchPts=base*mult;
         gdPts+=matchPts;
         if(mult>1&&base>0)sc[pl.name].stageBonus+=base*(mult-1);
-        if(base===3){sc[pl.name].exact++;sc[pl.name].exactPts+=matchPts;exCnt++;}
-        else if(base===1){sc[pl.name].correct++;sc[pl.name].correctPts+=matchPts;allExact=false;}
+        if(base===3){sc[pl.name].exact++;sc[pl.name].exactPts+=matchPts;sc[pl.name].exactBasePts+=base;exCnt++;}
+        else if(base===1){sc[pl.name].correct++;sc[pl.name].correctPts+=matchPts;sc[pl.name].correctBasePts+=base;allExact=false;}
         else{sc[pl.name].wrong++;allExact=false;}
       });
       // Perfect GD: ต้องทายครบทุกนัด + เป๊ะทุกนัด + มีอย่างน้อย 3 นัด
@@ -2137,8 +2160,8 @@ function calcStandings(upToGD=null){
   });
   const cr=settings['champion_result']||'',sr=settings['scorer_result']||'';
   gamePlayers().forEach(pl=>{
-    if(cr&&pl.champ===cr){sc[pl.name].bonus+=10;sc[pl.name].pts+=10;}
-    if(sr&&pl.scorer===sr){sc[pl.name].bonus+=10;sc[pl.name].pts+=10;}
+    if(cr&&pl.champ===cr){sc[pl.name].champBonus=10;sc[pl.name].bonus+=10;sc[pl.name].pts+=10;}
+    if(sr&&pl.scorer===sr){sc[pl.name].scorerBonus=10;sc[pl.name].bonus+=10;sc[pl.name].pts+=10;}
     sc[pl.name].pts-=(pl.bonus_penalty||0);
   });
   return Object.entries(sc).sort((a,b)=>b[1].pts-a[1].pts||b[1].exact-a[1].exact);
@@ -2410,7 +2433,7 @@ function getDNAFromMetrics(m){
 function buildPlayerAnalysis(name){
   const standings=calcStandings();
   const dense=getDenseRanks(standings);
-  const row=standings.find(([n])=>n===name)||[name,{pts:0,exact:0,correct:0,wrong:0,bonus:0,penalty:0,perfectBonus:0,stageBonus:0,champ:'',scorer:''}];
+  const row=standings.find(([n])=>n===name)||[name,{pts:0,exact:0,correct:0,wrong:0,exactBasePts:0,correctBasePts:0,bonus:0,champBonus:0,scorerBonus:0,penalty:0,perfectBonus:0,stageBonus:0,champ:'',scorer:''}];
   const s=row[1];
   const player=gamePlayers().find(p=>p.name===name)||{};
   const completed=allMatches.filter(m=>m.score1!==''&&m.score2!=='');
@@ -2531,7 +2554,7 @@ function buildPlayerAnalysis(name){
     deepDone:deepSelf.done,deepGood:deepSelf.good,deepExact:deepSelf.exact,deepAcc:deepSelf.acc,deepWeightedPts:deepSelf.weightedPts,deepBasePts:deepSelf.basePts,deepRank,deepLeagueAvgPts,deepLeagueAcc,
     bestRank,worstRank,rankJump,biggestJump,biggestDrop,
     favScore:fav[0],favScoreCount:fav[1],favExactScore:favExact[0],favExactScoreCount:favExact[1],topTeam:topTeam[0],topTeamCount:topTeam[1],
-    champ:player.champ||'',champPickCount,champPickPct,scorer:player.scorer||'',bonus:s.bonus||0,penalty:s.penalty||0,perfectBonus:s.perfectBonus||0,stageBonus:s.stageBonus||0,
+    champ:player.champ||'',champPickCount,champPickPct,scorer:player.scorer||'',bonus:s.bonus||0,champBonus:s.champBonus||0,scorerBonus:s.scorerBonus||0,penalty:s.penalty||0,perfectBonus:s.perfectBonus||0,stageBonus:s.stageBonus||0,exactBasePts:s.exactBasePts||0,correctBasePts:s.correctBasePts||0,
     drawPct:pct(drawPick,predCount),cleanSheetPct:pct(cleanSheetPick,predCount),boldScorePct:pct(boldScore,predCount),tightScorePct:pct(tightScore,predCount),
     avgAbsGoalError:predCount?absGoalErr/predCount:0,leagueAvgAbsGoalError,avgAbsScoreError:predCount?absScoreErr/predCount:0,
     underdogPick,underdogGood,underdogAcc:pct(underdogGood,underdogPick),majorityExact,contraExact,
@@ -2754,6 +2777,59 @@ function renderActualMetricCards(a){
     renderMetricCompareCard(m.deepWeightedPts,'แต้ม','ผลงานรอบคะแนน x2/x3',b.deepPts,maxDeep,m.deepDone>0,m.deepDone>0?`${m.deepDone} นัด`:'รอผลรอบลึก')
   ].join('');
 }
+let playerReportScoreChart=null;
+const SCORE_SOURCE_COLORS=['#22c55e','#d6a84a','#38bdf8','#a78bfa','#f97316','#ec4899'];
+function getScoreSourceBreakdown(m){
+  const items=[
+    {key:'exact',label:'สกอร์เป๊ะ (ฐาน)',value:+m.exactBasePts||0,color:SCORE_SOURCE_COLORS[0]},
+    {key:'correct',label:'ผลถูก (ฐาน)',value:+m.correctBasePts||0,color:SCORE_SOURCE_COLORS[1]},
+    {key:'stage',label:'แต้มเพิ่มรอบ x2/x3',value:+m.stageBonus||0,color:SCORE_SOURCE_COLORS[2]},
+    {key:'perfect',label:'Perfect Gameday',value:+m.perfectBonus||0,color:SCORE_SOURCE_COLORS[3]},
+    {key:'champ',label:'โบนัสทีมแชมป์',value:+m.champBonus||0,color:SCORE_SOURCE_COLORS[4]},
+    {key:'scorer',label:'โบนัสดาวซัลโว',value:+m.scorerBonus||0,color:SCORE_SOURCE_COLORS[5]}
+  ];
+  const visible=items.filter(x=>x.value>0);
+  const positiveTotal=items.reduce((sum,x)=>sum+x.value,0);
+  const penalty=+m.penalty||0;
+  const net=positiveTotal-penalty;
+  const pure=+m.rawPts||0;
+  const pureShare=positiveTotal>0?Math.round(pure/positiveTotal*100):0;
+  const extraPositive=(+m.perfectBonus||0)+(+m.champBonus||0)+(+m.scorerBonus||0);
+  const bonusDependency=positiveTotal>0?Math.round(extraPositive/positiveTotal*100):0;
+  return{items,visible,positiveTotal,penalty,net,pure,pureShare,bonusDependency};
+}
+function getScoreSourceInsight(m,b){
+  const actual=+m.currentRank||0,pure=+m.rawRank||0;
+  const rankDiff=pure&&actual?pure-actual:0;
+  let rankTxt='อันดับจริงเท่ากับอันดับจากการทายล้วน';
+  if(rankDiff>0)rankTxt=`โบนัสสุทธิช่วยขยับขึ้น ${rankDiff} อันดับ`;
+  else if(rankDiff<0)rankTxt=`โบนัสและค่าปรับทำให้อันดับลดลง ${Math.abs(rankDiff)} อันดับ`;
+  let sourceTxt='คะแนนส่วนใหญ่มาจากการทายรายแมตช์โดยตรง';
+  if(b.bonusDependency>=25)sourceTxt=`คะแนนพิเศษช่วยค่อนข้างมาก คิดเป็น ${b.bonusDependency}% ของคะแนนบวก`;
+  else if(b.bonusDependency>=10)sourceTxt=`คะแนนพิเศษช่วยเสริม ${b.bonusDependency}% ของคะแนนบวก`;
+  if(b.penalty>0)sourceTxt+=` ก่อนถูกหัก ${b.penalty} แต้ม`;
+  return`หากวัดเฉพาะการทายรายแมตช์ คุณมี ${b.pure} แต้ม อยู่อันดับ #${m.rawRank} ของลีก; ${rankTxt}. ${sourceTxt}.`;
+}
+function renderScoreSourceSection(a){
+  const m=a.metrics,b=getScoreSourceBreakdown(m);
+  const legend=b.visible.length?b.visible.map(x=>`<div class="score-source-item"><i class="score-source-dot" style="background:${x.color}"></i><span class="score-source-name">${escHtml(x.label)}</span><span class="score-source-val">${x.value} แต้ม</span></div>`).join(''):`<div class="score-source-item"><span class="score-source-name">ยังไม่มีคะแนนที่คำนวณได้</span></div>`;
+  return`<div class="report-section"><h4>🍩 ที่มาของคะแนน</h4><div class="score-source-wrap"><div class="score-donut-wrap"><canvas id="player-score-donut" width="300" height="300"></canvas><div class="score-donut-center"><b>${m.pts}</b><span>คะแนนสุทธิ</span></div></div><div class="score-source-legend">${legend}</div></div><div class="score-ledger"><div class="score-ledger-row"><span>คะแนนบวกทั้งหมด</span><b>${b.positiveTotal}</b></div>${b.penalty?`<div class="score-ledger-row penalty"><span>ค่าปรับแก้โบนัส</span><b>−${b.penalty}</b></div>`:''}<div class="score-ledger-row total"><span>คะแนนสุทธิ</span><b>${m.pts}</b></div></div><div class="pure-score-callout"><b>Pure Prediction ${b.pure} แต้ม · อันดับ #${m.rawRank}</b><br>${escHtml(getScoreSourceInsight(m,b))}</div></div>`;
+}
+function renderPlayerScoreDonut(name){
+  const canvas=document.getElementById('player-score-donut');if(!canvas||!window.Chart)return;
+  const a=getPlayerAnalysis(name),b=getScoreSourceBreakdown(a.metrics);
+  if(playerReportScoreChart){try{playerReportScoreChart.destroy();}catch(e){}playerReportScoreChart=null;}
+  const values=b.visible.length?b.visible.map(x=>x.value):[1];
+  const labels=b.visible.length?b.visible.map(x=>x.label):['ยังไม่มีคะแนน'];
+  const colors=b.visible.length?b.visible.map(x=>x.color):['#d1d5db'];
+  playerReportScoreChart=new Chart(canvas,{type:'doughnut',data:{labels,datasets:[{data:values,backgroundColor:colors,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>`${ctx.label}: ${ctx.raw} แต้ม`}}},animation:{duration:350}}});
+}
+function drawScoreDonutCanvas(canvas,b){
+  if(!canvas)return;const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,r=Math.min(w,h)*.40,inner=r*.66,total=b.visible.reduce((s,x)=>s+x.value,0);
+  ctx.clearRect(0,0,w,h);let start=-Math.PI/2;
+  if(!total){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.arc(cx,cy,inner,0,Math.PI*2,true);ctx.fillStyle='#334155';ctx.fill();return;}
+  b.visible.forEach(x=>{const ang=Math.PI*2*x.value/total;ctx.beginPath();ctx.arc(cx,cy,r,start,start+ang);ctx.arc(cx,cy,inner,start+ang,start,true);ctx.closePath();ctx.fillStyle=x.color;ctx.fill();start+=ang;});
+}
 function renderPlayerReport(name){
   const a=getPlayerAnalysis(name);const m=a.metrics;
   const isLast=m.currentRank===calcStandings().length;
@@ -2773,6 +2849,7 @@ function renderPlayerReport(name){
     <div class="report-grid" style="margin-top:10px">${renderActualMetricCards(a)}</div>
     <div class="report-chip-row" style="margin-top:10px">${evidence.map(x=>`<span class="report-chip">${escHtml(x)}</span>`).join('')}</div>
   </div>
+  ${renderScoreSourceSection(a)}
   <div class="report-section"><h4>📌 สรุปตัวตนนักทาย</h4><div class="report-bullets"><div class="report-bullet"><i>✅</i><span>${escHtml(strengths[0])}</span></div><div class="report-bullet"><i>⚠️</i><span>${escHtml(weaknesses[0])}</span></div><div class="report-bullet"><i>💡</i><span>${escHtml(a.recommendation)}</span></div></div></div>
   <div class="report-section"><h4>📊 Accuracy vs League</h4>${renderMiniBars(a)}<div class="report-grid" style="margin-top:10px"><div class="report-stat"><b>${m.overallAcc}%</b><span>ทายไม่ผิด · ลีก ${m.leagueAcc}%</span></div><div class="report-stat"><b>${m.exactPct}%</b><span>Exact · ลีก ${m.leagueExactPct}%</span></div><div class="report-stat"><b>${m.contraAcc}%</b><span>สวน Majority แล้วถูก</span></div><div class="report-stat"><b>${m.safeAcc}%</b><span>ตาม Majority แล้วถูก</span></div></div></div>
   <div class="report-section"><h4>🎮 Score Fingerprint</h4><div class="report-grid"><div class="report-stat"><b>${m.avgPredGoals.toFixed(1)}</b><span>ประตูรวมที่ทายเฉลี่ย · ลีก ${m.leagueAvgPredGoals.toFixed(1)}</span></div><div class="report-stat"><b>${m.avgAbsGoalError.toFixed(1)}</b><span>พลาดประตูรวมเฉลี่ย · ลีก ${m.leagueAvgAbsGoalError.toFixed(1)}</span></div><div class="report-stat"><b>${m.boldScorePct}%</b><span>ทายสกอร์สูง 4+ ลูก</span></div><div class="report-stat"><b>${m.cleanSheetPct}%</b><span>ทายมีคลีนชีต</span></div><div class="report-stat"><b>${m.drawPct}%</b><span>ทายเสมอ</span></div><div class="report-stat"><b>${m.tightScorePct}%</b><span>ทายเกมสูสี</span></div></div><div class="report-chip-row" style="margin-top:10px"><span class="report-chip">⚽ สกอร์ที่ทายบ่อย: ${escHtml(m.favScore)} (${m.favScoreCount})</span><span class="report-chip">🎯 เป๊ะบ่อยสุด: ${escHtml(m.favExactScore)} (${m.favExactScoreCount})</span><span class="report-chip">❤️ Bias: ${escHtml(m.topTeam)} (${m.topTeamCount})</span></div></div>
@@ -2790,9 +2867,9 @@ function openPlayerReport(name){
   if(!modal||!content)return;
   content.innerHTML=`<div class="report-head"><div><div class="report-title">Analyzing...</div><div class="report-sub">กำลังอ่าน Prediction DNA ของ ${escHtml(name)}</div></div><button class="report-close" onclick="closePlayerReport()">×</button></div><div class="report-hero"><div class="report-dna-label">🧬 Detecting pattern</div><div class="report-summary">กำลังสรุปแบบ Dynamic จากคะแนนล่าสุด, อันดับ, bonus, penalty, perfect GD, weight x2/x3 เมื่อมีข้อมูลรอบคะแนนหนักจริง และแพตเทิร์นการทาย</div></div>`;
   modal.classList.add('open');document.body.style.overflow='hidden';
-  setTimeout(()=>{content.innerHTML=renderPlayerReport(name);},450);
+  setTimeout(()=>{content.innerHTML=renderPlayerReport(name);requestAnimationFrame(()=>renderPlayerScoreDonut(name));},450);
 }
-function closePlayerReport(){const modal=document.getElementById('player-report-modal');if(modal)modal.classList.remove('open');document.body.style.overflow='';}
+function closePlayerReport(){const modal=document.getElementById('player-report-modal');if(modal)modal.classList.remove('open');if(playerReportScoreChart){try{playerReportScoreChart.destroy();}catch(e){}playerReportScoreChart=null;}document.body.style.overflow='';}
 async function ensureHtml2Canvas(){
   if(window.html2canvas)return window.html2canvas;
   await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
@@ -2800,11 +2877,12 @@ async function ensureHtml2Canvas(){
 }
 function buildShareCard(name){
   const a=getPlayerAnalysis(name),m=a.metrics;
-  return`<div class="report-share-card" id="report-share-card"><h2>${escHtml(name)}</h2><div style="font-size:34px;margin-top:14px;color:#dbece3">Rank #${m.currentRank} · ${m.pts} pts</div><div class="share-dna">${a.dna.emoji} ${escHtml(a.dna.key)}</div><div class="share-summary">${escHtml(a.summary)}</div><div class="share-metrics"><div class="share-metric"><b>${m.exactPct}%</b><span>Exact</span></div><div class="share-metric"><b>${m.overallAcc}%</b><span>Not wrong</span></div><div class="share-metric"><b>${escHtml(m.favScore)}</b><span>Favorite score</span></div><div class="share-metric"><b>#${m.bestRank}</b><span>Best rank</span></div></div><div class="share-foot"><span>Football Prediction 2026</span><span>🧬 Dynamic Prediction DNA</span></div></div>`;
+  const b=getScoreSourceBreakdown(m);return`<div class="report-share-card" id="report-share-card"><h2>${escHtml(name)}</h2><div style="font-size:34px;margin-top:14px;color:#dbece3">Rank #${m.currentRank} · ${m.pts} pts</div><div class="share-dna">${a.dna.emoji} ${escHtml(a.dna.key)}</div><div class="share-summary">${escHtml(a.summary)}</div><div style="display:grid;grid-template-columns:360px 1fr;gap:30px;align-items:center;margin-top:32px"><div style="position:relative;width:340px;height:340px"><canvas id="share-score-donut" width="340" height="340"></canvas><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><b style="font-family:var(--display);font-size:64px;color:#ffe27a;line-height:1">${m.pts}</b><span style="font-size:25px;color:#dbece3">คะแนนสุทธิ</span></div></div><div style="font-size:27px;line-height:1.6;color:#eefbf4"><b style="font-family:var(--display);font-size:38px;color:#ffe27a">Pure ${m.rawPts} pts · Rank #${m.rawRank}</b><br>คะแนนบวก ${b.positiveTotal}${b.penalty?` · หัก ${b.penalty}`:''}<br>${b.pureShare}% มาจากการทายแมตช์</div></div><div class="share-metrics"><div class="share-metric"><b>${m.exactPct}%</b><span>Exact</span></div><div class="share-metric"><b>${m.overallAcc}%</b><span>Not wrong</span></div><div class="share-metric"><b>${b.bonusDependency}%</b><span>Bonus dependency</span></div><div class="share-metric"><b>#${m.rawRank} → #${m.currentRank}</b><span>Pure → Actual rank</span></div></div><div class="share-foot"><span>Football Prediction 2026</span><span>🧬 Dynamic Prediction DNA</span></div></div>`;
 }
 async function makeReportPng(name){
   const mount=document.getElementById('report-share-mount');mount.innerHTML=buildShareCard(name);
   const el=document.getElementById('report-share-card');
+  const a=getPlayerAnalysis(name);drawScoreDonutCanvas(document.getElementById('share-score-donut'),getScoreSourceBreakdown(a.metrics));
   const html2canvas=await ensureHtml2Canvas();
   const canvas=await html2canvas(el,{backgroundColor:null,scale:1,useCORS:true});
   mount.innerHTML='';
