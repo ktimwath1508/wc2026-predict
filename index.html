@@ -2590,24 +2590,108 @@ function buildPlayerAnalysis(name){
   if(metrics.champ&&metrics.champPickPct>0&&metrics.champPickPct<=15)summary+=`โบนัสแชมป์เป็นสายเลือกนอกกระแส (${metrics.champ}, มีคนเลือก ${metrics.champPickPct}% ของลีก) ซึ่งสะท้อน upside สูงแต่ก็มี downside ต่อคะแนนรวม. `;
   if(dna.key==='High-Risk Explorer')summary+=`จุดที่ชัดคือการทายฉีกยังเปลี่ยนเป็นคะแนนได้ไม่คุ้ม โดยสวนถูก ${metrics.contraAcc}% ต่ำกว่าค่าเฉลี่ยลีก ${metrics.leagueAcc}% และ Exact ${metrics.exact} นัดอยู่ในกลุ่มล่างของลีก จึงทำให้คะแนนรวมยังไม่สะท้อนความกล้าที่ใช้ในการทาย. `;
   summary+=`${champTxt}; ${scorerTxt}.`;
-  let recommendation='ครั้งหน้าควรรักษาจุดแข็งเรื่องการอ่านผู้ชนะไว้ แล้วเพิ่มความละเอียดในการเดาสกอร์เพื่อขยับ Exact ให้สูงขึ้น';
-  if(dna.key==='Outcome Reader'||dna.key==='Result Specialist')recommendation='ฐานการอ่านผลการแข่งขันแข็งแรงมากแล้ว ถ้าเพิ่ม Exact Score ได้อีกเพียงเล็กน้อย โดยใช้แพทเทิร์น historical, xG, ฟอร์มเกมรุก/รับ และสกอร์ยอดนิยมของคู่ลักษณะเดียวกัน จะมีโอกาสขยับจากกลุ่มนำไปลุ้นแชมป์ได้จริง';
-  if(dna.key==='Exact Hunter')recommendation='ความคมด้าน Exact อยู่ระดับหัวแถวแล้ว จุดที่เพิ่มอันดับได้เร็วที่สุดคือยกระดับ “แผนสำรองเมื่อไม่มั่นใจสกอร์” ให้ยังทายผลถูกก่อน โดยใช้ historical, xG, ฟอร์มเหย้า-เยือน และเช็ก lineup ใกล้ kickoff เพื่อเลือกผู้ชนะให้แม่นขึ้น แม้สกอร์จะไม่เป๊ะก็ยังเก็บแต้มต่อเนื่องได้';
-  if(!(dna.key==='Outcome Reader'||dna.key==='Result Specialist')&&metrics.safePct>=75)recommendation='ครั้งหน้าลองกล้าเสี่ยงในเกมสูสีมากขึ้นเล็กน้อย เพราะคุณเก็บแต้มได้สม่ำเสมอแล้ว แต่การฉีกบางคู่จะช่วยสร้างช่องว่างในการลุ้นแชมป์';
-  if(!(dna.key==='Outcome Reader'||dna.key==='Result Specialist')&&metrics.contraPct>=50)recommendation='ครั้งหน้าควรเลือกจังหวะฉีกให้แม่นขึ้น ลดการสวนในเกมที่ทีมเต็งชัดมาก แล้วเก็บความเสี่ยงไว้กับคู่ที่ฟอร์มหรือราคาใกล้กันจริง ๆ';
-  if(!(dna.key==='Outcome Reader'||dna.key==='Result Specialist')&&metrics.champ&&metrics.champPickPct>0&&metrics.champPickPct<=15&&metrics.currentRank>5)recommendation='สไตล์กล้าเลือกต่างคือเอกลักษณ์ที่ดี แต่ถ้าเป้าหมายคือคะแนนรวม ลองแยกทีมที่เชียร์ออกจากทีมที่มีโอกาสให้แต้มสูงสุด โดยเก็บการเสี่ยงไว้กับคู่ที่มีข้อมูลสนับสนุนจริง ๆ';
-  if(metrics.highPct>=65)recommendation='ครั้งหน้าลองลดสกอร์รวมลงในบางคู่ เพราะแพตเทิร์นตอนนี้มักทายสูงกว่าผลจริง ทำให้หลุด Exact หลายครั้ง';
-  if(metrics.lowPct>=65)recommendation='ครั้งหน้าลองเปิดสกอร์ให้สูงขึ้นในคู่ที่เกมรุกเด่น เพราะแพตเทิร์นตอนนี้มักทายต่ำกว่าผลจริง';
-  if(metrics.drawPct>=20)recommendation='ครั้งหน้าถ้ายังชอบอ่านเกมเสมอ ให้เลือกเฉพาะคู่ที่ทรงสูสีจริง ๆ เพราะผลเสมอให้ผลตอบแทนดีแต่พลาดง่าย';
-  if(metrics.avgLeadHours!==null&&metrics.lateSavePct>=45)recommendation='ครั้งหน้าถ้ายังเป็นสาย deadline ให้ใช้ข้อมูล lineup/ฟอร์มล่าสุดเป็นข้อได้เปรียบ แต่ควรระวังการรีบกดท้าย ๆ จนพลาดส่งบางคู่';
-  if(metrics.avgLeadHours!==null&&metrics.earlySavePct>=60)recommendation='ครั้งหน้าจุดแข็งคือวางแผนเร็ว แต่ลองกลับมาเช็กข่าวตัวจริงหรืออาการเจ็บก่อน kickoff อีกครั้ง อาจช่วยลดเกมที่หลุด Exact ได้';
-  if(metrics.avgLeadHours!==null&&metrics.earlySavePct>=60&&metrics.currentRank>=8)recommendation='คุณส่งคำทายเร็วเป็นข้อดีเรื่องวินัย แต่ถ้าต้องการหนีท้ายตาราง ลองใจเย็นขึ้นในบางคู่ รอดู lineup/แนวโน้มตลาด หรือดูว่าเพื่อนส่วนใหญ่ไปทางไหนก่อน แล้วเลือกจังหวะฉีกอย่างมีเหตุผลเพื่อเปิดช่องทำคะแนน';
-  if(metrics.rawRank===1&&metrics.currentRank!==1)recommendation='จุดแข็งคือคะแนนทายผลจริงสูงสุดอยู่แล้ว ครั้งหน้าต้องระวังตัวแปร bonus/penalty เพราะรายละเอียดเล็ก ๆ ตรงนี้สามารถพลิกแชมป์ได้';
-  if(metrics.exactLeader)recommendation='จุดแข็งคือความคมเรื่อง Exact ชัดมาก ครั้งหน้าควรรักษาแพทเทิร์นสกอร์ที่ถนัดไว้ แล้วเลือกจังหวะเล่นโบนัสให้แน่นขึ้นเพื่อแปลงความแม่นเป็นแชมป์';
-  if(metrics.leaderGDs>=4&&metrics.currentRank>1)recommendation='คุณมีทรงแชมป์และเคยคุมหัวตารางได้นาน ครั้งหน้าต้องปิดงานใน Gameday คะแนนหนักและกันคะแนนโบนัส/Perfect ของคู่แข่งให้ดี เพราะจุดเดียวอาจโดนปาดได้';
-  if(metrics.currentRank===1)recommendation='แชมป์ครั้งนี้มาจากคะแนนสุทธิที่ครบทั้งผลแข่ง รอบพิเศษ และโบนัส ครั้งหน้ารักษาความสม่ำเสมอแบบนี้ไว้ แล้วระวังการแก้โบนัสที่อาจเสียแต้มฟรี';
-  if(dna.key==='High-Risk Explorer')recommendation='ความกล้าเป็นจุดแข็ง แต่ตอนนี้ความเสี่ยงยังให้ผลตอบแทนไม่คุ้ม ลองเลือกฉีกเฉพาะคู่ที่มีข้อมูลสนับสนุนหรือสูสีจริง ๆ และเพิ่มความละเอียดเรื่องสกอร์ เพื่อดัน Exact จากกลุ่มล่างให้สูงขึ้น';
-  if(metrics.isLast)recommendation='ครั้งหน้าลองลดความเสี่ยงลงนิดและยึดเกมที่ทีมเต็งชัดให้มากขึ้นก่อน แล้วค่อยเลือกฉีกเฉพาะแมตช์ที่มีเหตุผล จะช่วยหนีท้ายตารางได้เยอะ';
+  // Personal recommendation engine: เลือกจาก “คอขวด” ที่เด่นที่สุดของแต่ละคน
+  // Segment ใช้เป็นบริบท แต่ recommendation ใช้ metrics จริง เพื่อไม่ให้คนละคนได้คำแนะนำซ้ำแบบกว้าง ๆ
+  const recs=[];
+  const addRec=(key,score,text)=>recs.push({key,score,text});
+  const exactGap=metrics.leagueExactPct-metrics.exactPct;
+  const accGap=metrics.leagueAcc-metrics.overallAcc;
+  const recoveryGap=metrics.leagueRecoveryPct-metrics.recoveryPct;
+  const goalErrGap=metrics.avgAbsGoalError-metrics.leagueAvgAbsGoalError;
+
+  // อ่านผลได้ แต่ Exact ต่ำ: เหมาะกับการใช้ xG/xGC เพื่อ calibrate สกอร์
+  if(metrics.exactPct<metrics.leagueExactPct && metrics.overallAcc>=metrics.leagueAcc-2){
+    addRec('XG_SCORE_CALIBRATION',88+Math.max(0,exactGap),
+      `คุณอ่านฝั่งชนะ/ไม่แพ้ได้ค่อนข้างดี (${metrics.overallAcc}% เทียบลีก ${metrics.leagueAcc}%) แต่ Exact ยังต่ำกว่าลีก ${Math.max(0,exactGap)} จุดเปอร์เซ็นต์ ครั้งหน้าลองใช้ xG, xGC, จำนวนโอกาสยิงคุณภาพ และค่าเฉลี่ยประตูเหย้า-เยือน เพื่อแปลงจาก “ถูกผล” ให้ใกล้ “ถูกสกอร์” มากขึ้น โดยเฉพาะคู่ที่คุณมั่นใจผู้ชนะอยู่แล้ว`);
+  }
+
+  // Exact สูง แต่เวลาไม่เป๊ะมักหลุด: คำแนะนำเฉพาะ Exact Hunter
+  if(dna.key==='Exact Hunter'||(metrics.exactPct>=metrics.leagueExactPct+2&&metrics.recoveryPct<metrics.leagueRecoveryPct)){
+    addRec('EXACT_BACKUP_PLAN',92+Math.max(0,recoveryGap),
+      `ความคมด้าน Exact อยู่ระดับหัวแถว (${metrics.exact} นัด, Rank #${metrics.exactRank}) แต่เมื่อไม่เป๊ะยังเก็บ Correct ได้ ${metrics.recoveryPct}% เทียบลีก ${metrics.leagueRecoveryPct}% จุดที่เพิ่มอันดับได้เร็วที่สุดคือเลือก “ฝั่งไม่แพ้” ให้ถูกก่อนในเกมที่สกอร์ไม่ชัด แล้วค่อยใช้ xG/xGC, ฟอร์มเหย้า-เยือน และ lineup ปรับสกอร์สุดท้าย`);
+  }
+
+  // ทายสวนบ่อยแต่ผลตอบแทนต่ำ
+  if(metrics.contraPct>=35&&metrics.contraAcc<metrics.leagueAcc){
+    addRec('CONTRA_EFFICIENCY',86+(metrics.contraPct-35)+Math.max(0,metrics.leagueAcc-metrics.contraAcc),
+      `คุณฉีกจาก Majority ${metrics.contraPct}% แต่สวนแล้วไม่ผิด ${metrics.contraAcc}% ยังต่ำกว่าค่ากลางลีก ${metrics.leagueAcc}% ครั้งหน้าควรเก็บการสวนไว้กับคู่ที่ xG gap แคบ, ฟอร์ม 5 นัดใกล้กัน หรือทีมเต็งมี xGC สูงผิดปกติ เพื่อลดการฉีกที่มีความเสี่ยงแต่ไม่มี edge รองรับ`);
+  }
+
+  // เพลย์เซฟมากเกินไป แต่ฐานแข็ง
+  if(metrics.safePct>=75&&metrics.safeAcc>=metrics.leagueAcc-2){
+    addRec('SELECTIVE_DIFFERENTIATION',74+(metrics.safePct-75),
+      `คุณตาม Majority สูงถึง ${metrics.safePct}% และยังเก็บแต้มได้ค่อนข้างสม่ำเสมอ จุดต่อไปไม่ใช่เสี่ยงทุกคู่ แต่เลือกฉีกเพียง 1–2 คู่ที่ข้อมูลสวนกระแสชัด เช่น xG ดีกว่าผลลัพธ์ล่าสุด หรือทีมรองสร้างโอกาสได้มากกว่าที่อันดับบอก เพื่อสร้างช่องว่างโดยไม่เสียฐานคะแนนเดิม`);
+  }
+
+  // Bias สกอร์สูง/ต่ำ
+  if(metrics.highPct>=65){
+    addRec('HIGH_SCORE_BIAS',82+(metrics.highPct-65),
+      `แพตเทิร์นของคุณทายสกอร์สูงกว่าผลจริง ${metrics.highPct}% และพลาดประตูรวมเฉลี่ย ${metrics.avgAbsGoalError.toFixed(1)} ลูก ครั้งหน้าลองดู xG รวมของสองทีม, conversion rate และจำนวน big chances ก่อนเลือก 3–2 หรือ 3–1; ถ้าตัวเลขไม่สนับสนุน ให้ลดลงหนึ่งประตูเพื่อเพิ่มโอกาส Exact`);
+  }
+  if(metrics.lowPct>=65){
+    addRec('LOW_SCORE_BIAS',82+(metrics.lowPct-65),
+      `แพตเทิร์นของคุณทายสกอร์ต่ำกว่าผลจริง ${metrics.lowPct}% ครั้งหน้าใช้ xG รวม, xGC ช่วง 5 นัดล่าสุด และจำนวน big chances conceded ช่วยแยกเกมต่ำจริงออกจากเกมที่มีโอกาสเปิดหน้าแลก แล้วขยับจาก 1–0/1–1 ไป 2–1/2–2 เฉพาะคู่ที่ข้อมูลรองรับ`);
+  }
+
+  // เสมอเยอะ: ใส่เหตุผลเฉพาะคนจากสไตล์รอง
+  if(metrics.drawPct>=20){
+    const drawContext=metrics.exactPct<metrics.leagueExactPct
+      ? 'เพราะ Exact ของคุณยังต่ำกว่าค่ากลาง การลดเสมอที่ไม่มีหลักฐานจะช่วยให้สกอร์กระจายเข้าใกล้ผลจริงมากขึ้น'
+      : metrics.contraPct>=35
+        ? 'เพราะคุณมีสไตล์ฉีกอยู่แล้ว ควรใช้ผลเสมอเฉพาะเป็นจังหวะสวนที่มีข้อมูล ไม่ใช่เป็นตัวเลือกกลางอัตโนมัติ'
+        : 'ให้เลือกเสมอเฉพาะคู่ที่ xG/xGC, ฟอร์มเหย้า-เยือน และคุณภาพโอกาสของสองทีมใกล้กันจริง';
+    addRec('DRAW_SELECTIVITY',70+(metrics.drawPct-20),
+      `คุณเลือกผลเสมอ ${metrics.drawPct}% ซึ่งสูงพอจะมีผลต่อคะแนนโดยตรง ${drawContext}`);
+  }
+
+  // Timing
+  if(metrics.avgLeadHours!==null&&metrics.lateSavePct>=45){
+    addRec('LATE_DECISION_CONTROL',78+(metrics.lateSavePct-45),
+      `คุณส่งโค้งสุดท้าย ${metrics.lateSavePct}% ของแมตช์ ข้อดีคือเห็น lineup และข่าวล่าสุด แต่ควรตั้ง baseline ไว้ก่อน แล้วใช้ข้อมูลท้ายเกมแก้เฉพาะคู่ที่มีเหตุผล เพื่อไม่ให้การตัดสินใจเร่งรีบทำลาย edge จากข้อมูลสด`);
+  }
+  if(metrics.avgLeadHours!==null&&metrics.earlySavePct>=60){
+    const rankTail=Number(metrics.currentRank)>=8;
+    addRec('EARLY_RECHECK',rankTail?84:72,
+      `คุณส่งเร็ว ${metrics.earlySavePct}% ของแมตช์ เป็นข้อดีด้านวินัย แต่ควรมีรอบ re-check ก่อน kickoff โดยดู lineup, อาการเจ็บ และ xG trend ล่าสุด${rankTail?' โดยเฉพาะคู่ที่ต้องการฉีกเพื่อไล่อันดับ':' เพื่อรักษาความแม่นโดยไม่เสียข้อดีจากการวางแผนเร็ว'}`);
+  }
+
+  // Bonus / leader / champion rules มี priority สูง เพราะกระทบผลรวมจริง
+  if(metrics.rawRank===1&&metrics.currentRank!==1){
+    addRec('BONUS_DISCIPLINE',110,
+      `คะแนนจากการทายรายแมตช์ของคุณสูงสุด (${metrics.rawPts} แต้ม) แต่คะแนนสุทธิอยู่อันดับ #${metrics.currentRank} ครั้งหน้าควรบริหารโบนัสและการแก้คำตอบให้รัดกุม เพราะจุดต่างไม่ได้อยู่ที่ฝีมือทายแมตช์ แต่อยู่ที่แต้มพิเศษและบทลงโทษ`);
+  }
+  if(metrics.exactLeader){
+    addRec('EXACT_LEADER_CONVERSION',100,
+      `คุณเป็นผู้นำ Exact ของลีก (${metrics.exact} นัด) จึงไม่จำเป็นต้องเปลี่ยนสูตรการอ่านสกอร์มาก จุดที่คุ้มกว่าคือรักษา pattern ที่ทำให้เป๊ะ แล้วเพิ่มการจัดการโบนัสและเกมคะแนนหนัก เพื่อเปลี่ยนความคมให้เป็นอันดับรวมสูงสุด`);
+  }
+  if(metrics.leaderGDs>=4&&metrics.currentRank>1){
+    addRec('CLOSE_OUT_LEAD',105,
+      `คุณเคยคุมอันดับ 1 รวม ${metrics.leaderGDs} จุดบนกราฟ แปลว่าฐานการทายแข็งแรงแล้ว ครั้งหน้าจุดสำคัญคือ “ปิดเกม” ใน Gameday คะแนนหนัก และไม่ปล่อยแต้ม Perfect/โบนัสให้กลายเป็นจุดพลิกอันดับในช่วงท้าย`);
+  }
+  if(metrics.currentRank===1){
+    addRec('CHAMPION_MAINTENANCE',120,
+      `แชมป์ครั้งนี้มาจากคะแนนสุทธิที่ครบทั้งผลแข่ง รอบพิเศษ และโบนัส ครั้งหน้ารักษาความสม่ำเสมอเดิมไว้ แต่ยังควรตรวจคำตอบโบนัสก่อน deadline เพื่อไม่เสียแต้มฟรีจากรายละเอียดเล็ก ๆ`);
+  }
+  if(metrics.champ&&metrics.champPickPct>0&&metrics.champPickPct<=15&&Number(metrics.currentRank)>5){
+    addRec('FANDOM_VS_VALUE',90,
+      `การเลือกแชมป์ ${metrics.champ} มีคนเลือกเพียง ${metrics.champPickPct}% แสดงความกล้าแตกต่าง แต่ถ้าเป้าหมายคือคะแนนรวม ควรแยกทีมที่เชียร์ออกจากทีมที่มี probability สูงกว่า โดยใช้ราคา, squad strength และเส้นทางรอบน็อกเอาต์ประกอบก่อนล็อกโบนัส`);
+  }
+  if(dna.key==='High-Risk Explorer'){
+    addRec('HIGH_RISK_CONTROL',108,
+      `ความกล้าเป็นเอกลักษณ์ของคุณ แต่ตอนนี้สวนถูก ${metrics.contraAcc}% และ Exact ${metrics.exact} นัดยังอยู่กลุ่มล่าง ครั้งหน้าลองจำกัด “เดิมพันสวน” ไว้เฉพาะคู่ที่ xG, xGC หรือฟอร์มจริงขัดกับภาพจำของทีมเต็ง แล้วเล่นตรงในคู่ที่ gap ชัด เพื่อให้ความเสี่ยงสร้างคะแนนมากกว่าสร้างความผันผวน`);
+  }
+  if(metrics.isLast){
+    addRec('BOTTOM_RECOVERY',115,
+      `เพื่อหนีท้ายตาราง ครั้งหน้าควรสร้างฐานจากเกมที่ทีมเหนือกว่าชัดก่อน แล้วเลือกฉีกเพียงไม่กี่คู่ที่มีข้อมูลรองรับ เช่น xG gap ใกล้กันหรือทีมเต็งเสียโอกาสคุณภาพสูงบ่อย วิธีนี้จะลด Wrong โดยยังเหลือ upside สำหรับไล่อันดับ`);
+  }
+
+  // fallback ยัง personalize ด้วย metric ที่ต่างกัน
+  if(!recs.length){
+    addRec('BALANCED_TUNE',10,
+      `ภาพรวมของคุณค่อนข้างสมดุล: ทายไม่ผิด ${metrics.overallAcc}% เทียบลีก ${metrics.leagueAcc}% และ Exact ${metrics.exactPct}% เทียบลีก ${metrics.leagueExactPct}% ครั้งหน้าลองเลือกปรับเพียงจุดเดียวจากข้อมูลจริง—คู่ที่สกอร์ไม่ชัดให้ดู xG/xGC และคู่ที่ทีมเหนือกว่าชัดให้เน้นเก็บผลก่อน—เพื่อเพิ่มคะแนนโดยไม่ทำลายสไตล์เดิม`);
+  }
+  recs.sort((a,b)=>b.score-a.score||a.key.localeCompare(b.key));
+  const recommendation=recs[0].text;
   return{ name,dna,metrics,summary,strengths:strengths.slice(0,5),weaknesses:weaknesses.slice(0,5),evidence:evidence.slice(0,5),recommendation,champTxt,scorerTxt,timeline,stageStats,isFinal,modeLabel:isFinal?'Final Tournament Report':'Live Current Analysis' };
 }
 function renderMiniBars(a){
