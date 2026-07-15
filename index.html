@@ -876,6 +876,23 @@ html[data-theme="night"] .report-title,html[data-theme="night"] .report-dna-labe
 html[data-theme="night"] .report-bar-track,html[data-theme="neon"] .report-bar-track{background:#193029}
 @media(max-width:380px){.report-grid{grid-template-columns:1fr}.report-actions{grid-template-columns:1fr}.report-bar-row{grid-template-columns:64px 1fr 38px}}
 
+/* DNA metric cards: actual units + league median comparison */
+.report-stat.metric-compare{padding:11px 10px;text-align:left}
+.metric-main{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.metric-main b{font-size:20px!important;white-space:nowrap}
+.metric-unit{font-size:10px;color:var(--muted);font-weight:800;margin-left:3px}
+.metric-label{font-size:10.5px;color:var(--muted);font-weight:800;margin-top:4px;line-height:1.35}
+.metric-track{position:relative;height:8px;background:#e8f0e6;border-radius:999px;margin-top:9px;overflow:visible}
+.metric-fill{height:100%;background:linear-gradient(90deg,var(--pitch),var(--gold));border-radius:999px;min-width:2px}
+.metric-median{position:absolute;top:-3px;width:2px;height:14px;background:var(--ink);border-radius:2px;opacity:.7;transform:translateX(-1px)}
+.metric-compare-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px;font-size:9.8px;font-weight:800;line-height:1.25}
+.metric-benchmark{color:var(--muted)}
+.metric-status.above{color:var(--good)}
+.metric-status.near{color:var(--warn)}
+.metric-status.below{color:var(--bad)}
+html[data-theme="night"] .metric-track,html[data-theme="neon"] .metric-track{background:#193029}
+html[data-theme="night"] .metric-median,html[data-theme="neon"] .metric-median{background:#f4fff9}
+
 </style>
 </head>
 <body>
@@ -2601,6 +2618,58 @@ function renderMiniBars(a){
     <div class="report-bar-row"><span>Wrong</span><div class="report-bar-track"><div class="report-bar-fill" style="width:${m.wrongPct}%"></div></div><span>${m.wrongPct}%</span></div>
   </div>`;
 }
+function medianNumber(values){
+  const arr=(values||[]).filter(v=>Number.isFinite(v)).sort((a,b)=>a-b);
+  if(!arr.length)return 0;
+  const mid=Math.floor(arr.length/2);
+  return arr.length%2?arr[mid]:(arr[mid-1]+arr[mid])/2;
+}
+function getActualMetricBenchmarks(){
+  const st=calcStandings();
+  const names=st.map(([n])=>n);
+  const metrics=names.map(n=>getPlayerAnalysis(n).metrics);
+  return{
+    accuracy:medianNumber(metrics.map(x=>x.overallAcc)),
+    exact:medianNumber(metrics.map(x=>x.exact)),
+    contraAcc:medianNumber(metrics.filter(x=>x.contraPct>0).map(x=>x.contraAcc)),
+    deepPts:medianNumber(metrics.filter(x=>x.deepDone>0).map(x=>x.deepWeightedPts)),
+    maxExact:Math.max(1,...metrics.map(x=>x.exact||0)),
+    maxDeep:Math.max(1,...metrics.map(x=>x.deepWeightedPts||0))
+  };
+}
+function metricCompareStatus(value,median,unit,isAvailable=true){
+  if(!isAvailable)return{cls:'near',text:'ยังไม่มีข้อมูล'};
+  const diff=value-median;
+  const tolerance=unit==='นัด'?1:unit==='แต้ม'?1:2;
+  if(diff>tolerance)return{cls:'above',text:`เหนือค่ากลาง +${Number.isInteger(diff)?diff:diff.toFixed(1)} ${unit}`};
+  if(diff<-tolerance)return{cls:'below',text:`ต่ำกว่าค่ากลาง ${Number.isInteger(diff)?diff:diff.toFixed(1)} ${unit}`};
+  return{cls:'near',text:'เกาะกลุ่มค่ากลาง'};
+}
+function renderMetricCompareCard(value,unit,label,median,maxValue,available=true,extra=''){
+  const shown=available?value:'–';
+  const valNum=Number(value)||0, medNum=Number(median)||0;
+  const scale=Math.max(1,Number(maxValue)||1,valNum,medNum);
+  const fill=Math.max(0,Math.min(100,valNum/scale*100));
+  const marker=Math.max(0,Math.min(100,medNum/scale*100));
+  const status=metricCompareStatus(valNum,medNum,unit,available);
+  return`<div class="report-stat metric-compare">
+    <div class="metric-main"><b>${shown}${available&&unit==='%'?'%':''}${available&&unit!=='%'?` <small class="metric-unit">${unit}</small>`:''}</b></div>
+    <div class="metric-label">${label}${extra?` · ${extra}`:''}</div>
+    <div class="metric-track"><div class="metric-fill" style="width:${available?fill:0}%"></div>${available?`<i class="metric-median" style="left:${marker}%"></i>`:''}</div>
+    <div class="metric-compare-row"><span class="metric-benchmark">ค่ากลางลีก ${available?(Number.isInteger(medNum)?medNum:medNum.toFixed(1))+(unit==='%'?'%':' '+unit):'–'}</span><span class="metric-status ${status.cls}">${status.text}</span></div>
+  </div>`;
+}
+function renderActualMetricCards(a){
+  const m=a.metrics,b=getActualMetricBenchmarks();
+  const maxExact=b.maxExact;
+  const maxDeep=b.maxDeep;
+  return[
+    renderMetricCompareCard(m.overallAcc,'%','อัตราทายไม่ผิด',b.accuracy,100,true,'Exact + Correct'),
+    renderMetricCompareCard(m.exact,'นัด','ทายสกอร์เป๊ะ',b.exact,maxExact,true),
+    renderMetricCompareCard(m.contraAcc,'%','สวน Majority แล้วไม่ผิด',b.contraAcc,100,m.contraPct>0,`ฉีก ${m.contraPct}% ของครั้งที่เทียบได้`),
+    renderMetricCompareCard(m.deepWeightedPts,'แต้ม','ผลงานรอบคะแนน x2/x3',b.deepPts,maxDeep,m.deepDone>0,m.deepDone>0?`${m.deepDone} นัด`:'รอผลรอบลึก')
+  ].join('');
+}
 function renderPlayerReport(name){
   const a=getPlayerAnalysis(name);const m=a.metrics;
   const isLast=m.currentRank===calcStandings().length;
@@ -2617,7 +2686,7 @@ function renderPlayerReport(name){
     <div class="report-sub">${escHtml(a.modeLabel||'Live Current Analysis')} · Dynamic DNA</div><div class="report-dna-label">${a.dna.emoji} ${escHtml(a.dna.key)}</div>
     ${traits.length?`<div class="report-chip-row" style="margin-top:8px">${traits.map(t=>`<span class="report-chip">${t.emoji} ${escHtml(t.key)}</span>`).join('')}</div>`:''}
     <div class="report-summary">${escHtml(a.summary)}</div>
-    <div class="report-grid" style="margin-top:10px"><div class="report-stat"><b>${dim.accuracy??'-'}</b><span>Accuracy IQ</span></div><div class="report-stat"><b>${dim.risk??'-'}</b><span>Risk / Contra</span></div><div class="report-stat"><b>${dim.precision??'-'}</b><span>Precision</span></div><div class="report-stat"><b>${dim.clutch??'-'}</b><span>Clutch x2/x3</span></div></div>
+    <div class="report-grid" style="margin-top:10px">${renderActualMetricCards(a)}</div>
     <div class="report-chip-row" style="margin-top:10px">${evidence.map(x=>`<span class="report-chip">${escHtml(x)}</span>`).join('')}</div>
   </div>
   <div class="report-section"><h4>📌 สรุปตัวตนนักทาย</h4><div class="report-bullets"><div class="report-bullet"><i>✅</i><span>${escHtml(strengths[0])}</span></div><div class="report-bullet"><i>⚠️</i><span>${escHtml(weaknesses[0])}</span></div><div class="report-bullet"><i>💡</i><span>${escHtml(a.recommendation)}</span></div></div></div>
